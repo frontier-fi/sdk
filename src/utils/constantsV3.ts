@@ -4,7 +4,7 @@ import { ChainId } from './constants';
 export const STABLE_POOL_CONSTRAINTS = {
     MAX_TOKENS: 5,
     MIN_AMP: 1n,
-    MAX_AMP: 50000n,
+    MAX_AMP: 5000n,
 };
 
 // V3
