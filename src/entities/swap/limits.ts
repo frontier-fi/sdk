@@ -36,23 +36,20 @@ export function getPathLimits(
     maxAmount: bigint,
 ): bigint[] | undefined {
     if (!expected.pathAmounts) return undefined;
-    let pathAmounts: bigint[];
-    let total = 0n;
-    if (expected.swapKind === SwapKind.GivenIn) {
-        pathAmounts = expected.pathAmounts.map((a) => {
-            const limit = slippage.applyTo(a, -1);
-            total = total + limit;
-            return limit;
-        });
-    } else {
-        pathAmounts = expected.pathAmounts.map((a) => {
-            const limit = slippage.applyTo(a);
-            total = total + limit;
-            return limit;
-        });
+    const direction = expected.swapKind === SwapKind.GivenIn ? -1 : 1;
+    let cumulativeAmount = 0n;
+    let cumulativeLimit = 0n;
+    // Carry rounding across paths instead of adding all dust to one path,
+    // which can make a small exact-in path require more than its quoted output.
+    const pathLimits = expected.pathAmounts.map((amount) => {
+        cumulativeAmount += amount;
+        const nextLimit = slippage.applyTo(cumulativeAmount, direction);
+        const limit = nextLimit - cumulativeLimit;
+        cumulativeLimit = nextLimit;
+        return limit;
+    });
+    if (cumulativeLimit !== maxAmount) {
+        throw new Error('Swap path amounts do not match the aggregate quote');
     }
-    // Slippage can lead to rounding diff compared to total so this handles dust diff
-    const diff = maxAmount - total;
-    pathAmounts[0] = pathAmounts[0] + diff;
-    return pathAmounts;
+    return pathLimits;
 }
