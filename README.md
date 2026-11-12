@@ -40,6 +40,11 @@ If your platform does not support one of the required features, it is also possi
 the package and verify its CommonJS and ESM imports. These checks do not replace
 transaction execution against a fork of Frontier's deployed contracts.
 
+`pnpm test:no-integration` excludes fork integration tests and live API contract
+tests (`*.integration.test.ts` and `*.contract.test.ts`). It still validates
+configured deployments via RPC. `pnpm test:all` includes the live API tests;
+their inherited Balancer pool fixtures require a compatible API and dataset.
+
 `pnpm test`
 
 Testing runs against a local anvil fork and requires the following RPC URL to be configured in your .env file:
