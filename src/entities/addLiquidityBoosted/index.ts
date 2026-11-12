@@ -231,7 +231,10 @@ export class AddLiquidityBoostedV3 {
                 return unsupportedAddLiquidityInputKind(input.addLiquidityKind);
         }
 
-        const value = getValue(input.amountsIn, wethIsEth);
+        const maxAmountsIn = input.amountsIn.map((a, i) =>
+            TokenAmount.fromRawAmount(a.token, amounts.maxAmountsIn[i]),
+        );
+        const value = getValue(maxAmountsIn, wethIsEth);
 
         return {
             callData,
@@ -241,9 +244,7 @@ export class AddLiquidityBoostedV3 {
                 input.bptOut.token,
                 amounts.minimumBpt,
             ),
-            maxAmountsIn: input.amountsIn.map((a, i) =>
-                TokenAmount.fromRawAmount(a.token, amounts.maxAmountsIn[i]),
-            ),
+            maxAmountsIn,
         };
     }
 

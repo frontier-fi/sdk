@@ -183,7 +183,7 @@ export class AddLiquidityV3 implements AddLiquidityBase {
                         args: [
                             input.poolId,
                             input.amountsIn[input.tokenInIndex].token.address,
-                            input.amountsIn[input.tokenInIndex].amount,
+                            amounts.maxAmountsIn[input.tokenInIndex],
                             input.bptOut.amount,
                             !!input.wethIsEth,
                             input.userData,
@@ -195,17 +195,19 @@ export class AddLiquidityV3 implements AddLiquidityBase {
                 return unsupportedAddLiquidityInputKind(input.addLiquidityKind);
         }
 
+        const maxAmountsIn = input.amountsIn.map((a, i) =>
+            TokenAmount.fromRawAmount(a.token, amounts.maxAmountsIn[i]),
+        );
+
         return {
             callData,
             to: AddressProvider.Router(input.chainId),
-            value: getValue(input.amountsIn, !!input.wethIsEth),
+            value: getValue(maxAmountsIn, !!input.wethIsEth),
             minBptOut: TokenAmount.fromRawAmount(
                 input.bptOut.token,
                 amounts.minimumBpt,
             ),
-            maxAmountsIn: input.amountsIn.map((a, i) =>
-                TokenAmount.fromRawAmount(a.token, amounts.maxAmountsIn[i]),
-            ),
+            maxAmountsIn,
         };
     }
 
