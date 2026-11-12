@@ -1,4 +1,4 @@
-import { abs, ChainId, isSameAddress, max, min, SDKError } from '../../utils';
+import { abs, ChainId, isSameAddress, SDKError } from '../../utils';
 import { InputToken, SwapKind } from '../../types';
 import { PriceImpactAmount } from '../priceImpactAmount';
 import { RemoveLiquidityKind } from '../removeLiquidity/types';
@@ -10,8 +10,9 @@ import { AddLiquidityBoostedUnbalancedInput } from '../addLiquidityBoosted/types
 import { AddLiquidityBoostedV3 } from '../addLiquidityBoosted';
 import { RemoveLiquidityBoostedV3 } from '../removeLiquidityBoosted';
 import { RemoveLiquidityBoostedProportionalInput } from '../removeLiquidityBoosted/types';
-import { Address, BaseError, ContractFunctionRevertedError } from 'viem';
+import { Address } from 'viem';
 import { Token } from '../token';
+import { reconcileDeltas } from './addLiquidityUnbalanced';
 
 /**
  * Calculate price impact on add liquidity unbalanced operations
@@ -67,6 +68,8 @@ export async function addLiquidityUnbalancedBoosted(
     const removeLiquidityInput: RemoveLiquidityBoostedProportionalInput = {
         chainId: input.chainId,
         rpcUrl: input.rpcUrl,
+        sender: input.sender,
+        userData: input.userData,
         bptIn: bptOut.toInputAmount(),
         tokensOut: poolTokens.map((t) => t.address),
         kind: RemoveLiquidityKind.Proportional,
@@ -79,40 +82,61 @@ export async function addLiquidityUnbalancedBoosted(
     // deltas between unbalanced and proportional amounts
     const deltas = amountsOut.map((a, i) => a.amount - amountsIn[i].amount);
 
-    // get how much BPT each delta would mint
-    const deltaBPTs: bigint[] = [];
-    for (let i = 0; i < deltas.length; i++) {
-        if (deltas[i] === 0n) {
-            deltaBPTs.push(0n);
-        } else {
-            deltaBPTs.push(
-                await queryAddLiquidityForTokenDelta(
-                    addLiquidity,
-                    input,
-                    poolState,
-                    poolTokens,
-                    i,
-                    deltas[i],
-                ),
-            );
-        }
-    }
-
-    // (near) proportional amountsIn, so we can just round down price impact to zero
-    if (deltaBPTs.every((deltaBPT) => deltaBPT >= 0n)) {
-        return PriceImpactAmount.fromRawAmount(0n);
-    }
-
     // zero out deltas by swapping between tokens from proportionalAmounts
     // to exactAmountsIn, leaving the remaining delta within a single token
-    const remainingDeltaIndex = await zeroOutDeltas(
-        addLiquidity,
-        input,
-        poolState,
-        poolTokens,
+    const remainingDeltaIndex = await reconcileDeltas(
         deltas,
-        deltaBPTs,
+        amountsIn,
+        (index) =>
+            queryAddLiquidityForTokenDelta(
+                addLiquidity,
+                input,
+                poolState,
+                poolTokens,
+                index,
+                deltas[index],
+            ),
+        async (swapKind, tokenInIndex, tokenOutIndex, amount) => {
+            const swapInput = buildSwapInput(
+                input.chainId,
+                swapKind,
+                poolState.address,
+                getTokenWrapInfo(
+                    poolState.tokens,
+                    poolTokens[tokenInIndex].toInputToken(),
+                ),
+                getTokenWrapInfo(
+                    poolState.tokens,
+                    poolTokens[tokenOutIndex].toInputToken(),
+                ),
+                swapKind === SwapKind.GivenIn ? amount : 0n,
+                swapKind === SwapKind.GivenOut ? amount : 0n,
+            );
+            try {
+                const swap = new Swap({
+                    ...swapInput,
+                    userData: input.userData,
+                });
+                const result = await swap.query(
+                    input.rpcUrl,
+                    undefined,
+                    input.sender,
+                );
+                return result.swapKind === SwapKind.GivenIn
+                    ? result.expectedAmountOut.amount
+                    : result.expectedAmountIn.amount;
+            } catch {
+                throw new SDKError(
+                    'Price Impact',
+                    'Add Liquidity Boosted Unbalanced',
+                    'Unexpected error while calculating addLiquidityBoostedUnbalanced PI at Swap step',
+                );
+            }
+        },
     );
+    if (remainingDeltaIndex === undefined) {
+        return PriceImpactAmount.fromRawAmount(0n);
+    }
 
     // get relevant amount for price impact calculation
     const deltaAmount = TokenAmount.fromRawAmount(
@@ -140,126 +164,22 @@ async function queryAddLiquidityForTokenDelta(
         abs(delta),
     );
 
-    const amountsIn = [absDelta.toInputAmount()];
-    if (absDelta.amount <= 1000n)
-        // Work-around Vault _MINIMUM_WRAP_AMOUNT limit
-        amountsIn[0].rawAmount = 1001n;
     try {
         const { bptOut: deltaBPT } = await addLiquidity.query(
             {
                 ...input,
-                amountsIn,
+                amountsIn: [absDelta.toInputAmount()],
             },
             poolState,
         );
-        return delta < 0n ? -deltaBPT.amount : deltaBPT.amount;
+        return deltaBPT.amount;
     } catch (err) {
-        // see https://viem.sh/docs/contract/simulateContract#handling-custom-errors
-        if (err instanceof BaseError) {
-            const revertError = err.walk(
-                (err) => err instanceof ContractFunctionRevertedError,
-            );
-            if (revertError instanceof ContractFunctionRevertedError) {
-                const errorName = revertError.data?.errorName ?? '';
-                if (errorName === 'WrapAmountTooSmall') {
-                    return 0n;
-                }
-            }
-        }
         throw new SDKError(
             'Price Impact',
             'Add Liquidity Boosted Unbalanced',
             `Unexpected error while calculating addLiquidityBoostedUnbalanced PI at Delta add step:\n${err}`,
         );
     }
-}
-
-async function zeroOutDeltas(
-    addLiquidity: AddLiquidityBoostedV3,
-    input: AddLiquidityBoostedUnbalancedInput,
-    poolState: PoolStateWithUnderlyings,
-    poolTokens: Token[],
-    deltas: bigint[],
-    deltaBPTs: bigint[],
-) {
-    let minNegativeDeltaIndex = deltaBPTs.findIndex(
-        (deltaBPT) => deltaBPT === max(deltaBPTs.filter((a) => a < 0n)),
-    );
-    const nonZeroDeltasBPTs = deltaBPTs.filter((d) => d !== 0n);
-    for (let i = 0; i < nonZeroDeltasBPTs.length - 1; i++) {
-        const minPositiveDeltaIndex = deltaBPTs.findIndex(
-            (deltaBPT) => deltaBPT === min(deltaBPTs.filter((a) => a > 0n)),
-        );
-        minNegativeDeltaIndex = deltaBPTs.findIndex(
-            (deltaBPT) => deltaBPT === max(deltaBPTs.filter((a) => a < 0n)),
-        );
-
-        let swapKind: SwapKind;
-        let givenTokenIndex: number;
-        let resultTokenIndex: number;
-        let inputAmountRaw = 0n;
-        let outputAmountRaw = 0n;
-        if (
-            deltaBPTs[minPositiveDeltaIndex] <
-            abs(deltaBPTs[minNegativeDeltaIndex])
-        ) {
-            swapKind = SwapKind.GivenIn;
-            givenTokenIndex = minPositiveDeltaIndex;
-            resultTokenIndex = minNegativeDeltaIndex;
-            inputAmountRaw = abs(deltas[givenTokenIndex]);
-        } else {
-            swapKind = SwapKind.GivenOut;
-            givenTokenIndex = minNegativeDeltaIndex;
-            resultTokenIndex = minPositiveDeltaIndex;
-            outputAmountRaw = abs(deltas[givenTokenIndex]);
-        }
-
-        // address & decimals
-        const tokenIn = poolTokens[minPositiveDeltaIndex].toInputToken();
-        const tokenInWrapInfo = getTokenWrapInfo(poolState.tokens, tokenIn);
-
-        const tokenOut = poolTokens[minNegativeDeltaIndex].toInputToken();
-        const tokenOutWrapInfo = getTokenWrapInfo(poolState.tokens, tokenOut);
-
-        // Construct a buffer swap
-        const swapInput = buildSwapInput(
-            input.chainId,
-            swapKind,
-            poolState.address,
-            tokenInWrapInfo,
-            tokenOutWrapInfo,
-            inputAmountRaw,
-            outputAmountRaw,
-        );
-        try {
-            const swap = new Swap(swapInput);
-            const result = await swap.query(input.rpcUrl);
-            const resultAmount =
-                result.swapKind === SwapKind.GivenIn
-                    ? result.expectedAmountOut
-                    : result.expectedAmountIn;
-
-            deltas[givenTokenIndex] = 0n;
-            deltaBPTs[givenTokenIndex] = 0n;
-            deltas[resultTokenIndex] =
-                deltas[resultTokenIndex] + resultAmount.amount;
-            deltaBPTs[resultTokenIndex] = await queryAddLiquidityForTokenDelta(
-                addLiquidity,
-                input,
-                poolState,
-                poolTokens,
-                resultTokenIndex,
-                deltas[resultTokenIndex],
-            );
-        } catch {
-            throw new SDKError(
-                'Price Impact',
-                'Add Liquidity Boosted Unbalanced',
-                'Unexpected error while calculating addLiquidityBoostedUnbalanced PI at Swap step',
-            );
-        }
-    }
-    return minNegativeDeltaIndex;
 }
 
 type TokenWrapInfo = {

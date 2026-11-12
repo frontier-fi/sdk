@@ -62,6 +62,8 @@ export class PriceImpact {
         const removeLiquidityInput: RemoveLiquidityInput = {
             chainId: input.chainId,
             rpcUrl: input.rpcUrl,
+            sender: input.sender,
+            userData: input.userData,
             bptIn: input.bptOut,
             tokenOut: input.tokenIn,
             kind: RemoveLiquidityKind.SingleTokenExactIn,
@@ -174,7 +176,11 @@ export class PriceImpact {
         let amountsOut: TokenAmount[];
         let bptIn: TokenAmount;
         try {
-            const queryResult = await removeLiquidity.query(input, poolState);
+            const queryResult = await removeLiquidity.query(
+                input,
+                poolState,
+                input.block,
+            );
             amountsOut = queryResult.amountsOut;
             bptIn = queryResult.bptIn;
         } catch (err) {
@@ -190,12 +196,15 @@ export class PriceImpact {
         const addLiquidityInput: AddLiquidityUnbalancedInput = {
             chainId: input.chainId,
             rpcUrl: input.rpcUrl,
+            sender: input.sender,
+            userData: input.userData,
             amountsIn: amountsOut.map((a) => a.toInputAmount()),
             kind: AddLiquidityKind.Unbalanced,
         };
         const { bptOut } = await addLiquidity.query(
             addLiquidityInput,
             poolState,
+            input.block,
         );
 
         // calculate price impact using ABA method
