@@ -1,0 +1,40 @@
+name: Release checks
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check-types:release
+      - run: pnpm test:release
+      # Use checked-in generated types; publishing must not depend on a live API.
+      - run: pnpm exec tsup
+      - name: Check package contents
+        run: npm pack --dry-run --ignore-scripts
+      - name: Check package imports
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import { createRequire } from 'node:module';
+          import * as esm from './dist/index.mjs';
+          const cjs = createRequire(import.meta.url)('./dist/index.js');
+          assert.deepEqual(Object.keys(esm).sort(), Object.keys(cjs).sort());
+          for (const sdk of [esm, cjs]) {
+            assert.equal(typeof sdk.Swap, 'function');
+            assert.equal(typeof sdk.PriceImpact.addLiquidityUnbalanced, 'function');
+          }
+          JS

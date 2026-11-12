@@ -1,42 +1,97 @@
 name: Release
 
 on:
-  workflow_call:
+  push:
+    branches: [main]
   workflow_dispatch:
 
+concurrency:
+  group: sdk-release
+  cancel-in-progress: false
+
 permissions:
-  id-token: write  # Required for npm OIDC trusted publishing
-  contents: write  # Required for pushing git tags
-  pull-requests: write  # Required for changesets to create PRs
+  contents: read
 
 jobs:
+  checks:
+    uses: ./.github/workflows/release-checks.yml
+
   release:
-    name: Release
-    runs-on: macos-latest
-    strategy:
-      matrix:
-        node-version: [24]
-    timeout-minutes: 5
+    if: github.repository == 'frontier-fi/sdk' && github.ref == 'refs/heads/main'
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: release
+    permissions:
+      contents: write
+      id-token: write
 
     steps:
-      - name: Clone repository
-        uses: actions/checkout@v4
-
-      - name: Setup
-        uses: ./.github/actions/setup
-
-      # Trusted publishing requires npm 11.5.1+. Pin to 11.x: npm 12+ rejects
-      # pnpm's forwarded --git-checks (EUNKNOWNCONFIG) during changeset publish.
-      - name: Upgrade npm for trusted publishing
-        run: npm install -g npm@11.5.2
-        shell: bash
-
-      - name: Publish to NPM
-        uses: changesets/action@v1.4.0
+      # Match maths: app-authored version PRs trigger the normal PR checks.
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
         with:
-          publish: pnpm changeset:release
+          client-id: Iv23lin88uMBRaCQ5SzJ # maxyz-actions app
+          private-key: ${{ secrets.MAXYZ_ACTIONS_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - uses: actions/checkout@v7
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Update npm for trusted publishing
+        run: npm install -g npm@^11.5.1
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Create version PR
+        id: changesets
+        uses: changesets/action@v2
+        with:
+          version-script: pnpm changeset:version
+          pr-title: 'chore: version packages'
+          commit-message: 'chore: version packages'
+          github-token: ${{ steps.app-token.outputs.token }}
+
+      - name: Publish to npm
+        if: steps.changesets.outputs.has-changesets == 'false'
+        shell: bash
+        run: |
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+          test "$NAME" = '@frontier-fi/sdk'
+          # Only stable versions go to latest; prereleases need an explicit policy.
+          node -e 'if (!/^\d+\.\d+\.\d+$/.test(require("./package.json").version)) process.exit(1)'
+          if npm view "$NAME@$VERSION" version --json > "$RUNNER_TEMP/npm-version.json"; then
+            echo "$NAME@$VERSION is already on npm"
+          else
+            # Authentication and registry failures must not be treated as an unpublished version.
+            node -e 'const r = require(process.argv[1]); if (r.error?.code !== "E404") process.exit(1)' "$RUNNER_TEMP/npm-version.json"
+            npm publish --provenance --access public
+          fi
+
+      - name: Create GitHub release
+        if: steps.changesets.outputs.has-changesets == 'false'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Empty string so changesets/action uses OIDC instead of a classic token.
-          # Trusted publisher must be configured for main.yml on npm.
-          NPM_TOKEN: ''
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          # Scoped tags avoid collisions with the inherited Balancer v0.x tags.
+          TAG="@frontier-fi/sdk@$VERSION"
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "$TAG already released"
+            exit 0
+          fi
+          awk -v v="## $VERSION" '$0 == v {found=1; next} found && /^## / {exit} found {print}' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
+          gh release create "$TAG" --target "$GITHUB_SHA" --title "$TAG" --notes-file "$RUNNER_TEMP/notes.md"
