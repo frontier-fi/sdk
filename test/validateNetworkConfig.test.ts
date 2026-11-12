@@ -157,6 +157,24 @@ const CONTRACT_CHECKS: Record<string, ContractValidation> = {
     },
 };
 
+// Frontier deployment inputs, not the upstream Balancer deployment versions.
+// Source: frontier-fi/deployments/tasks/<deployment>/input.ts.
+const FRONTIER_SEPOLIA_VERSIONS: Record<string, string> = {
+    BatchRouter:
+        '{"name":"BatchRouter","version":1,"deployment":"20261019-batch-router"}',
+    BufferRouter:
+        '{"name":"BufferRouter","version":1,"deployment":"20261020-buffer-router"}',
+    CompositeLiquidityRouter:
+        '{"name":"CompositeLiquidityRouter","version":2,"deployment":"20261020-composite-liquidity-router"}',
+    GyroECLPPoolFactory:
+        '{"name":"GyroECLPPoolFactory","version":2,"deployment":"20261021-gyro-eclp"}',
+    Router: '{"name":"Router","version":2,"deployment":"20261019-router"}',
+    StablePoolFactory:
+        '{"name":"StablePoolFactory","version":1,"deployment":"20261021-stable-pool"}',
+    WeightedPoolFactory:
+        '{"name":"WeightedPoolFactory","version":2,"deployment":"20261021-weighted-pool"}',
+};
+
 // ─── Chains to test ─────────────────────────────────────────────────────────
 
 const CHAINS_TO_TEST: ChainId[] = [
@@ -177,6 +195,15 @@ const CHAINS_TO_TEST: ChainId[] = [
 // ─── Expected-missing per chain (derived from balancerV3Contracts gaps) ─────
 
 const EXPECTED_MISSING: Partial<Record<ChainId, string[]>> = {
+    [ChainId.SEPOLIA]: [
+        'FixedPriceLBPoolFactory',
+        'LBPoolFactory',
+        'MevCaptureHook',
+        'ReClammPoolFactory',
+        'StableSurgeHook',
+        'StableSurgePoolFactory',
+        'UnbalancedAddViaSwapRouter',
+    ],
     [ChainId.AVALANCHE]: ['FixedPriceLBPoolFactory'],
     [ChainId.OPTIMISM]: ['FixedPriceLBPoolFactory'],
     [ChainId.MONAD]: ['MevCaptureHook'],
@@ -415,6 +442,9 @@ describe('Network Configuration Validation', () => {
                 switch (meta.callType) {
                     case 'version': {
                         const expected =
+                            (chainId === ChainId.SEPOLIA
+                                ? FRONTIER_SEPOLIA_VERSIONS[meta.contractName]
+                                : undefined) ??
                             CONTRACT_CHECKS[meta.contractName].expectedVersion!;
                         if (expected === 'PLACEHOLDER') {
                             console.log(
