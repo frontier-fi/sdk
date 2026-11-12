@@ -239,7 +239,7 @@ export const NATIVE_ASSETS = {
         ChainId.SEPOLIA,
         NATIVE_ADDRESS,
         18,
-        '0x7b79995e5f793a07bc00c21412e50ecae098e7f9',
+        '0xfff9976782d46cc05630d1f6ebab18b2324d6b14',
         'ETH',
         'Ether',
     ),
