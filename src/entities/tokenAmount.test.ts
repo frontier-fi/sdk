@@ -1,6 +1,15 @@
 // pnpm test tokenAmount.test.ts
 
-import { ChainId, NATIVE_ASSETS, TokenAmount } from '@frontier-fi/sdk';
+import {
+    ChainId,
+    MathSol,
+    NATIVE_ASSETS,
+    ONE_36,
+    RAY,
+    Token,
+    TokenAmount,
+    WAD,
+} from '@frontier-fi/sdk';
 import { parseUnits } from 'viem';
 
 const weth = NATIVE_ASSETS[ChainId.SEPOLIA];
@@ -24,17 +33,18 @@ it('toInputAmount', () => {
     expect(inputAmount.rawAmount).toBe(rawAmount);
 });
 
-describe('toSignificant', () => {
-    it('should format amounts ', () => {
+describe('toSignificant & toExact', () => {
+    it('should format amounts', () => {
         const rawAmount = parseUnits('2.123456789123456789', weth.decimals);
         const tokenAmount = TokenAmount.fromRawAmount(weth, rawAmount);
 
         expect(tokenAmount.toSignificant(weth.decimals)).toEqual(
             '2.123456789123456789',
         );
+        expect(tokenAmount.toExact()).toEqual('2.123456789123456789');
     });
 
-    it('should format small amounts', () => {
+    it('should format small amounts preserving significant digits', () => {
         const smallRawAmount = parseUnits(
             '0.000000312457062375',
             weth.decimals,
@@ -46,6 +56,35 @@ describe('toSignificant', () => {
 
         expect(smallTokenAmount.toSignificant(weth.decimals)).toEqual(
             '0.000000312457062375',
+        );
+        expect(smallTokenAmount.toSignificant(6)).toEqual('0.000000312457');
+        expect(smallTokenAmount.toExact()).toEqual('0.000000312457062375');
+    });
+});
+
+describe('maths@0.2.0 primitives & validation', () => {
+    it('enforces token equality on add/sub and exact zero ceiling division', () => {
+        const a = TokenAmount.fromRawAmount(weth, 100n);
+        const otherToken = new Token(
+            ChainId.SEPOLIA,
+            '0x0000000000000000000000000000000000000001',
+            18,
+        );
+        const b = TokenAmount.fromRawAmount(otherToken, 100n);
+
+        expect(() => a.add(b)).toThrow('Token mismatch');
+        expect(() => a.sub(b)).toThrow('Token mismatch');
+        expect(TokenAmount.fromRawAmount(weth, 0n).mulUpFixed(WAD).amount).toBe(
+            0n,
+        );
+    });
+
+    it('exports corrected RAY (1e27), ONE_36 (1e36), and MathSol.powDownFixed rounding', () => {
+        expect(RAY).toBe(10n ** 27n);
+        expect(ONE_36).toBe(10n ** 36n);
+        const x = 1500000000000000001n; // 1.5 + 1e-18
+        expect(MathSol.powDownFixed(x, 2n * WAD)).toBe(
+            MathSol.mulDownFixed(x, x),
         );
     });
 });

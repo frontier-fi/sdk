@@ -10,7 +10,7 @@ import {
 import { gyroECLPPoolFactoryAbiExtended } from '@/abi';
 import { Hex } from '@/types';
 import { AddressProvider } from '@/entities/inputValidator/utils/addressProvider';
-import { GyroECLPMath } from '@balancer-labs/balancer-maths';
+import { GyroECLPMath } from '@frontier-fi/maths';
 
 const D18 = 10n ** 18n; // 18 decimal precision is how params are stored
 const D38 = 10n ** 38n; // 38 decimal precision for derived param return values
