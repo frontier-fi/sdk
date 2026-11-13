@@ -1,6 +1,7 @@
 import { HumanAmount, MinimalToken, PoolTokenWithBalance } from '../data';
 import { Address, Hex } from '../types';
 
+// Returned from API and used as input
 export type PoolState = {
     id: Hex;
     address: Address;

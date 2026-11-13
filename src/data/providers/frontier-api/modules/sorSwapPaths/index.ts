@@ -13,13 +13,14 @@ import {
     GqlChain,
 } from '../../generated/types';
 
+// Re-export the original type for backward compatibility
 export type SorInput = {
     chainId: ChainId;
     tokenIn: Address;
     tokenOut: Address;
     swapKind: SwapKind;
     swapAmount: TokenAmount; // API expects input in human readable form
-    useProtocolVersion?: 3;
+    useProtocolVersion?: 3; // If not specified API will return best
     poolIds?: Address[]; // If specified, API will return only paths that contain these poolIds
     considerPoolsWithHooks?: boolean; // If true, API will return paths that contain pools with hooks
 };
@@ -127,6 +128,7 @@ export class SorSwapPaths {
             considerPoolsWithHooks: sorInput.considerPoolsWithHooks ?? true,
         };
 
+        // Add poolIds only if provided
         if (sorInput.poolIds && sorInput.poolIds.length > 0) {
             baseVariables.poolIds = sorInput.poolIds;
         }
@@ -148,6 +150,7 @@ export class SorSwapPaths {
             >,
         });
 
+        // Now data is fully typed as sorGetSwapPathsQuery
         const apiResponse: sorGetSwapPathsQuery = data;
         const sorData = apiResponse.sorGetSwapPaths;
 

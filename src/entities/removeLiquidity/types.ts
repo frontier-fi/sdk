@@ -7,12 +7,13 @@ import { RemoveLiquidityBoostedBuildCallInput } from '../removeLiquidityBoosted/
 import { Hex } from 'viem';
 
 export enum RemoveLiquidityKind {
-    SingleTokenExactOut = 'SingleTokenExactOut',
-    SingleTokenExactIn = 'SingleTokenExactIn',
-    Proportional = 'Proportional',
-    Recovery = 'Recovery',
+    SingleTokenExactOut = 'SingleTokenExactOut', // exact out (single token out)
+    SingleTokenExactIn = 'SingleTokenExactIn', // exact in (single token out)
+    Proportional = 'Proportional', // exact in (all tokens out)
+    Recovery = 'Recovery', // exact in (all tokens out) - Pool in recovery mode
 }
 
+// This will be extended for each pools specific output requirements
 export type RemoveLiquidityBaseInput = {
     chainId: number;
     rpcUrl: string;
@@ -50,6 +51,7 @@ export type RemoveLiquidityInput =
     | RemoveLiquidityProportionalInput
     | RemoveLiquidityRecoveryInput;
 
+// Returned from a remove liquidity query
 export type RemoveLiquidityBaseQueryOutput = {
     poolType: string;
     poolId: Address;

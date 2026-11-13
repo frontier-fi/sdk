@@ -494,7 +494,7 @@ export async function findTokenBalanceSlot(
  * @param slots Slot that stores token balance in memory - use npm package `slot20` to identify which slot to provide
  * @param balances Balances in EVM amounts
  * @param isVyperMapping Whether the storage uses Vyper or Solidity mapping
- * @param protocolVersion Balancer VAULT_V2 version
+ * @param protocolVersion Frontier Vault protocol version
  * @param approveOnPermit2 Whether to approve spender on Permit2
  */
 export const forkSetup = async (

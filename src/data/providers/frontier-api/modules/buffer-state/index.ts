@@ -29,10 +29,12 @@ export class Buffers {
             query: print(this.bufferStateQuery),
             variables: {
                 wrappedTokenAddress: wrappedTokenAddress.toLowerCase(),
+                // the API requires chain names to be sent as uppercase strings
                 chain: API_CHAIN_NAMES[this.frontierApiClient.chainId],
             },
         });
 
+        // Now data is fully typed as tokenGetTokensQuery
         const apiResponse: tokenGetTokensQuery = data;
         const tokens = apiResponse.tokenGetTokens;
 

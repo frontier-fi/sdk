@@ -19,6 +19,13 @@ import {
 } from './getPoolStateWithBalancesV3';
 import { AddLiquidityBoostedProportionalInput } from '../addLiquidityBoosted/types';
 
+/**
+ * For a given pool and reference token amount, calculate all token amounts proportional to their balances within the pool.
+ *
+ * @param pool
+ * @param referenceAmount
+ * @returns Proportional amounts rounded down based on smart contract implementation for calculateProportionalAmountsOut.
+ */
 export function calculateProportionalAmounts(
     pool: {
         address: Address;
@@ -30,6 +37,7 @@ export function calculateProportionalAmounts(
     tokenAmounts: InputAmount[];
     bptAmount: InputAmount;
 } {
+    // ensure that bpt is taken into account even with pools that do not contain its BPT as a token
     const tokensWithoutBpt = pool.tokens.filter(
         (t) => !pool.address.toLowerCase().includes(t.address.toLowerCase()),
     );
@@ -42,6 +50,7 @@ export function calculateProportionalAmounts(
         },
     ];
 
+    // validate that input amount is relative to a token in the pool or its BPT
     const referenceTokenIndex = tokensWithBpt.findIndex(
         (t) =>
             t.address.toLowerCase() === referenceAmount.address.toLowerCase(),
@@ -53,10 +62,12 @@ export function calculateProportionalAmounts(
         );
     }
 
+    // scale up balances from HumanAmount to RawAmount
     const balances = tokensWithBpt.map((t) =>
         parseUnits(t.balance, t.decimals),
     );
 
+    // calculate proportional amounts
     const referenceTokenBalance = balances[referenceTokenIndex];
     const ratio = MathSol.divDownFixed(
         referenceAmount.rawAmount,
@@ -80,6 +91,16 @@ export function calculateProportionalAmounts(
     };
 }
 
+/**
+ * Calculate the BPT amount for a given reference amount in a pool (rounded down).
+ *
+ * Note: this is used in the AddLiquidityProportional query scenario, where a non-bpt referenceAmount is provided and
+ * the SDK needs to infer the corresponding bptOut. Rounding down favors leaving some dust behind instead of returning an amount
+ * slightly higher than the referenceAmount provided, in order to prevent a revert in the add liquidity proportional transaction.
+ * @param input
+ * @param poolState
+ * @returns
+ */
 export const getBptAmountFromReferenceAmount = async (
     input: AddLiquidityProportionalInput,
     poolState: PoolState,
@@ -105,6 +126,13 @@ export const getBptAmountFromReferenceAmount = async (
     return bptAmount;
 };
 
+/**
+ * Calculate the BPT amount for a given reference amount in a boosted pool (rounded down).
+ *
+ * @param input
+ * @param poolStateWithUnderlyings
+ * @returns
+ */
 export const getBptAmountFromReferenceAmountBoosted = async (
     input: AddLiquidityBoostedProportionalInput,
     poolStateWithUnderlyings: PoolStateWithUnderlyings,

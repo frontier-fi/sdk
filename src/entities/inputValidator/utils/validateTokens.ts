@@ -37,7 +37,7 @@ export const validateTokensAddLiquidity = (
             areTokensInArray(
                 'Add Liquidity Proportional',
                 [addLiquidityInput.referenceAmount.address],
-                [poolState.address, ...poolState.tokens.map((t) => t.address)],
+                [poolState.address, ...poolState.tokens.map((t) => t.address)], // reference amount can be any pool token or pool BPT
             );
             break;
         default:
@@ -102,6 +102,7 @@ export const validateTokensAddLiquidityBoosted = (
     addLiquidityInput: AddLiquidityBoostedInput,
     poolState: PoolStateWithUnderlyings,
 ) => {
+    // check if poolState.protocolVersion is 3
     if (poolState.protocolVersion !== 3) {
         throw protocolVersionError(
             'Add Liquidity Boosted',
@@ -110,6 +111,7 @@ export const validateTokensAddLiquidityBoosted = (
     }
 
     if (addLiquidityInput.kind === AddLiquidityKind.Unbalanced) {
+        // List of all tokens that can be added to the pool
         const poolTokens = poolState.tokens
             .flatMap((token) => [
                 token.address.toLowerCase(),
@@ -128,6 +130,7 @@ export const validateTokensAddLiquidityBoosted = (
     }
 
     if (addLiquidityInput.kind === AddLiquidityKind.Proportional) {
+        // if referenceAmount is not the BPT, it must be included in tokensIn
         if (
             !isSameAddress(
                 addLiquidityInput.referenceAmount.address,

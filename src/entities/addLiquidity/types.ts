@@ -10,6 +10,7 @@ export enum AddLiquidityKind {
     Proportional = 'Proportional',
 }
 
+// This will be extended for each pools specific input requirements
 export type AddLiquidityBaseInput = {
     chainId: number;
     rpcUrl: string;

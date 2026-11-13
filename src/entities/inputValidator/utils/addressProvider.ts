@@ -4,6 +4,7 @@ import { Hex, Address } from '@/types';
 
 /**
  * Represents a mapping from ChainId to contract address.
+ * Not all contracts are deployed on every chain, so this is a partial record.
  */
 type ContractAddresses = Partial<Record<ChainId, Address>>;
 
@@ -12,6 +13,13 @@ type ContractAddresses = Partial<Record<ChainId, Address>>;
  * Provides static methods for each contract type, with validation and error handling.
  */
 export class AddressProvider {
+    /**
+     * Looks up the contract name in frontierContracts by reference.
+     * Used internally for error reporting.
+     * @param contract - The contract address mapping to look up.
+     * @returns The contract name as a string, or 'UnknownContract' if not found.
+     * @private
+     */
     private static lookupContractName(contract: ContractAddresses): string {
         return (
             Object.entries(frontierContracts).find(

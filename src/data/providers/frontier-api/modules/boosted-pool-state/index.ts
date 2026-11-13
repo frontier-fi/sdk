@@ -35,10 +35,12 @@ export class BoostedPools {
             query: print(this.boostedPoolStateQuery),
             variables: {
                 id: id.toLowerCase(),
+                // the API requires chain names to be sent as uppercase strings
                 chain: API_CHAIN_NAMES[this.frontierApiClient.chainId],
             },
         });
 
+        // Now data is fully typed as poolGetPoolWithUnderlyingsQuery
         const apiResponse: poolGetPoolWithUnderlyingsQuery = data;
         const poolData = apiResponse.poolGetPool;
         if (poolData.protocolVersion !== 3) {

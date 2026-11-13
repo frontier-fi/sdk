@@ -80,6 +80,11 @@ export class PermitHelper {
     };
 }
 
+/**
+ * Signs a permit for a given ERC-2612 ERC20 token using the specified parameters.
+ *
+ * @param { Client & WalletActions & PublicActions } client - Wallet client to invoke for signing the permit message
+ */
 const signPermit = async (
     client: PublicWalletClient,
     token: Address,

@@ -52,6 +52,7 @@ export class Swap {
         return this.swap.isBatchSwap;
     }
 
+    // rpcUrl is optional, but recommended to prevent rate limiting
     public async query(
         rpcUrl?: string,
         block?: bigint,
@@ -64,6 +65,12 @@ export class Swap {
         return this.swap.queryCallData();
     }
 
+    /**
+     * Returns the transaction data to be sent to the router contract
+     *
+     * @param input
+     * @returns
+     */
     buildCall(
         input: SwapBuildCallInput,
     ): SwapBuildOutputExactIn | SwapBuildOutputExactOut {

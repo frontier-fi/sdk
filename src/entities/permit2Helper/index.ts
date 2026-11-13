@@ -205,6 +205,7 @@ export class Permit2Helper {
             expiration?: number;
         },
     ): Promise<Permit2> {
+        // get maxAmountIn
         let maxAmountIn: TokenAmount;
         if (input.queryOutput.swapKind === SwapKind.GivenIn) {
             const queryOutput = input.queryOutput as ExactInQueryOutput;
@@ -223,6 +224,7 @@ export class Permit2Helper {
             ? AddressProvider.BatchRouter(chainId)
             : AddressProvider.Router(chainId);
 
+        // build permit details
         const details: PermitDetails[] = [
             await getDetails(
                 input.client,
@@ -235,6 +237,7 @@ export class Permit2Helper {
             ),
         ];
 
+        // sign permit2
         return signPermit2(input.client, input.owner, spender, details);
     }
 }

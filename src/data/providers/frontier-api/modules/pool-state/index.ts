@@ -51,10 +51,12 @@ export class Pools {
             query: print(this.poolStateQuery),
             variables: {
                 id: id.toLowerCase(),
+                // the API requires chain names to be sent as uppercase strings
                 chain: API_CHAIN_NAMES[this.frontierApiClient.chainId],
             },
         });
 
+        // Now data is fully typed as poolGetPoolQuery
         const apiResponse: poolGetPoolQuery = data;
         const poolData = apiResponse.poolGetPool;
         if (poolData.protocolVersion !== 3) {
@@ -85,10 +87,12 @@ export class Pools {
             query: print(this.poolStateWithRawTokensQuery),
             variables: {
                 id: id.toLowerCase(),
+                // the API requires chain names to be sent as uppercase strings
                 chain: API_CHAIN_NAMES[this.frontierApiClient.chainId],
             },
         });
 
+        // Now data is fully typed as poolGetPoolWithBalancesQuery
         const apiResponse: poolGetPoolWithBalancesQuery = data;
         const poolData = apiResponse.poolGetPool;
         if (poolData.protocolVersion !== 3) {

@@ -52,6 +52,7 @@ export class FrontierApiClient {
         this.apiUrl = apiUrl;
         this.chainId = chainId;
 
+        // Handle clientName with proper environment detection
         if (options?.clientName) {
             this.clientName = options.clientName;
         } else if (
@@ -71,6 +72,7 @@ export class FrontierApiClient {
             this.clientName = 'frontier-sdk';
         }
 
+        // Handle clientVersion with proper environment detection
         if (options?.clientVersion) {
             this.clientVersion = options.clientVersion;
         } else if (
@@ -87,6 +89,7 @@ export class FrontierApiClient {
                 (window as WindowWithConfig).FRONTIER_SDK_CLIENT_VERSION ||
                 '0.0.0';
         } else {
+            // Handle the case when __PACKAGE_VERSION__ is not defined (e.g., in tests)
             this.clientVersion =
                 typeof __PACKAGE_VERSION__ !== 'undefined'
                     ? __PACKAGE_VERSION__

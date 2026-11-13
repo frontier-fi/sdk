@@ -102,6 +102,15 @@ function validateBufferLength(paths: Path[]) {
     }
 }
 
+/**
+ * Determines if the given paths represent a batch swap.
+ *
+ * A batch swap is identified by one of the following conditions:
+ * - There is more than one path.
+ * - The first path contains more than one pool.
+ * - The input token is the same as the first pool in the first path. (a BPT swap)
+ * - The output token is the same as the first pool in the first path. (a BPT swap)
+ */
 export function isBatchSwap(
     paths: Path[],
     inputToken: Address,

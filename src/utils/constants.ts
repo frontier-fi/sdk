@@ -64,7 +64,7 @@ export const PERMIT2: Record<number, Address> = {
     [ChainId.SEPOLIA]: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
 };
 
-export const NATIVE_ASSETS: Record<number, NativeToken> = {
+export const NATIVE_ASSETS: Record<ChainId, NativeToken> = {
     [ChainId.SEPOLIA]: new NativeToken(
         ChainId.SEPOLIA,
         NATIVE_ADDRESS,

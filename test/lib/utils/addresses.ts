@@ -3,7 +3,7 @@ import { ChainId } from '@/utils';
 
 export type TestToken = { address: Address; decimals: number; slot?: number };
 
-export const TOKENS: Record<number, Record<string, TestToken>> = {
+export const TOKENS = {
     [ChainId.SEPOLIA]: {
         BAL: {
             address: '0xb19382073c7A0aDdbb56Ac6AF1808Fa49e377B75',
@@ -71,11 +71,11 @@ export const TOKENS: Record<number, Record<string, TestToken>> = {
             slot: 0,
         },
     },
-};
+} satisfies Record<number, Record<string, TestToken>>;
 
 export type TestPool = TestToken & { id: Hex; type: PoolType };
 
-export const POOLS: Record<number, Record<string, TestPool>> = {
+export const POOLS = {
     [ChainId.SEPOLIA]: {
         MOCK_WETH_BAL_POOL: {
             address: '0xb790fa0ba5d563b814b0ca1716c414f6b99937b2',
@@ -94,6 +94,14 @@ export const POOLS: Record<number, Record<string, TestPool>> = {
         MOCK_USDC_DAI_POOL: {
             address: '0x86fde41ff01b35846eb2f27868fb2938addd44c4',
             id: '0x86fde41ff01b35846eb2f27868fb2938addd44c4',
+            type: PoolType.Weighted,
+            decimals: 18,
+            slot: 0,
+        },
+        // weth, usdc/dai
+        MOCK_NESTED_POOL: {
+            address: '0xbfdbdb4d5b8e00bade87cf12ed58e6152f25ac3e',
+            id: '0xbfdbdb4d5b8e00bade87cf12ed58e6152f25ac3e',
             type: PoolType.Weighted,
             decimals: 18,
             slot: 0,
@@ -123,4 +131,4 @@ export const POOLS: Record<number, Record<string, TestPool>> = {
             slot: 0,
         },
     },
-};
+} satisfies Record<number, Record<string, TestPool>>;

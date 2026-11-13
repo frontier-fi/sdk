@@ -23,10 +23,19 @@ import { SDKError } from '@/utils/errors';
 export * from './helper';
 
 export class PriceImpact {
+    /**
+     * Calculate price impact on add liquidity single token operations
+     * @param input same input used in the corresponding add liquidity operation
+     * @param poolState same pool state used in the corresponding add liquidity operation
+     * @returns price impact amount
+     */
     static addLiquiditySingleToken = async (
         input: AddLiquiditySingleTokenInput,
         poolState: PoolState,
     ): Promise<PriceImpactAmount> => {
+        // inputs are being validated within AddLiquidity
+
+        // simulate adding liquidity to get amounts in
         const addLiquidity = new AddLiquidity();
         let amountsIn: TokenAmount[];
         try {
@@ -40,6 +49,7 @@ export class PriceImpact {
             );
         }
 
+        // simulate removing liquidity to get amounts out
         const removeLiquidity = new RemoveLiquidity();
         const removeLiquidityInput: RemoveLiquidityInput = {
             chainId: input.chainId,
@@ -53,6 +63,7 @@ export class PriceImpact {
             poolState,
         );
 
+        // get relevant amounts for price impact calculation
         const sortedTokens = getSortedTokens(poolState.tokens, input.chainId);
         const tokenIndex = sortedTokens.findIndex((t) =>
             t.isSameAddress(input.tokenIn),
@@ -61,6 +72,32 @@ export class PriceImpact {
         return priceImpactABA(amountsIn[tokenIndex], amountsOut[tokenIndex]);
     };
 
+    /**
+     * Calculate price impact on add liquidity unbalanced operations
+     *
+     * This is the only price impact calculation that adapts the ABA method instead
+     * of applying it directly. This happens because the ABA method requires a
+     * corresponding reverse operation to be applied, so we "get back" to the original
+     * state for comparison, hence A -> B -> A.
+     * This is not possible for AddLiquidityUnbalanced on v3 because there is no
+     * RemoveLiquidityUnbalanced.
+     * The alternative found was to simulate the RemoveLiquidityUnbalanced by applying
+     * RemoveLiquidityProportional and then swapping between tokens.
+     *
+     * Here are the steps to calculate the price impact for add liquidity unbalanced:
+     * 1. query add liquidity unbalanced with `exactAmountsIn` to get `bptOut`
+     * 2. query remove liquidity proportional with `bptOut` as `bptIn` to get `proportionalAmountsOut`
+     * 3. get `diffs` =  `proportionalAmountsOut` - `exactAmountsIn`
+     * 4. swap between tokens zeroing out the `diffs` between `proportionalAmountsOut`
+     *    and `exactAmountsIn`, leaving the remaining diff within a single
+     *    token → `diffFinal` (see code below for detailed steps)
+     * 5. `amountInitial` will be the `exactAmountsIn` respective to `diffFinal` token
+     * 6. price impact ABA = `diffFinal` / `amountInitial` / 2
+     *
+     * @param input same input used in the corresponding add liquidity operation
+     * @param poolState same pool state used in the corresponding add liquidity operation
+     * @returns price impact amount
+     */
     static addLiquidityUnbalanced = async (
         input: AddLiquidityUnbalancedInput,
         poolState: PoolState,
@@ -75,10 +112,19 @@ export class PriceImpact {
         return addLiquidityUnbalancedBoosted(input, poolState);
     }
 
+    /**
+     * Calculate price impact on remove liquidity operations
+     * @param input same input used in the corresponding remove liquidity operation
+     * @param poolState same pool state used in the corresponding remove liquidity operation
+     * @returns price impact amount
+     */
     static removeLiquidity = async (
         input: RemoveLiquiditySingleTokenExactInInput,
         poolState: PoolState,
     ): Promise<PriceImpactAmount> => {
+        // inputs are being validated within RemoveLiquidity
+
+        // simulate removing liquidity to get amounts out
         const removeLiquidity = new RemoveLiquidity();
         let amountsOut: TokenAmount[];
         let bptIn: TokenAmount;
@@ -94,6 +140,7 @@ export class PriceImpact {
             );
         }
 
+        // simulate adding liquidity to get amounts in
         const addLiquidity = new AddLiquidity();
         const addLiquidityInput: AddLiquidityUnbalancedInput = {
             chainId: input.chainId,
@@ -106,6 +153,7 @@ export class PriceImpact {
             poolState,
         );
 
+        // calculate price impact using ABA method
         return priceImpactABA(bptIn, bptOut);
     };
 }
