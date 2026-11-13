@@ -174,19 +174,34 @@ export async function reconcileDeltas(
         const negative = deltas.flatMap((d, i) => (d < 0n ? [i] : []));
         if (positive.length === 0 || negative.length === 0) break;
 
-        for (const index of [...positive, ...negative]) {
-            if (!deltaBPTs.has(index)) {
-                deltaBPTs.set(index, await queryDeltaBPT(index));
+        // On the final pair, consume an undeposited surplus exactly so that
+        // the residual stays on the deposited token. Exact-out can overspend
+        // that surplus and require a second, fee-bearing reverse swap.
+        const finalGivenIn =
+            positive.length === 1 &&
+            negative.length === 1 &&
+            amountsIn[positive[0]].amount === 0n &&
+            amountsIn[negative[0]].amount > 0n;
+        let tokenInIndex = positive[0];
+        let tokenOutIndex = negative[0];
+        if (!finalGivenIn) {
+            for (const index of [...positive, ...negative]) {
+                if (!deltaBPTs.has(index)) {
+                    deltaBPTs.set(index, await queryDeltaBPT(index));
+                }
             }
+            const smallest = (indices: number[]) =>
+                indices.reduce((a, b) =>
+                    deltaBPTs.get(a)! <= deltaBPTs.get(b)! ? a : b,
+                );
+            tokenInIndex = smallest(positive);
+            tokenOutIndex = smallest(negative);
         }
-        const smallest = (indices: number[]) =>
-            indices.reduce((a, b) =>
-                deltaBPTs.get(a)! <= deltaBPTs.get(b)! ? a : b,
-            );
-        const tokenInIndex = smallest(positive);
-        const tokenOutIndex = smallest(negative);
 
-        if (deltaBPTs.get(tokenInIndex)! < deltaBPTs.get(tokenOutIndex)!) {
+        if (
+            finalGivenIn ||
+            deltaBPTs.get(tokenInIndex)! < deltaBPTs.get(tokenOutIndex)!
+        ) {
             const amountOut = await querySwap(
                 SwapKind.GivenIn,
                 tokenInIndex,
@@ -210,15 +225,29 @@ export async function reconcileDeltas(
     }
 
     const deficits = deltas.flatMap((d, i) => (d < 0n ? [i] : []));
-    // Proportional deposits can leave zero deltas or rounding surpluses.
+    // No loss remains when cancellation is exact or only surpluses remain.
+    // Proportional deposits may instead leave several small rounding deficits.
     if (deficits.length === 0) return undefined;
 
     // Quotes may exhaust the surpluses before all deficits are cleared. Value
     // every remaining deficit in one deposited token using exact-output swaps;
     // never discard a residual or divide by an initial amount of zero.
+    // Avoid normalizing the total residual by a tiny deposited leg. scale18
+    // compares nominal token amounts (not market values). Preserve an existing
+    // deficit when largest deposits tie, avoiding an unnecessary conversion.
+    const largestDeposit = amountsIn.reduce(
+        (largest, amount) =>
+            amount.scale18 > largest ? amount.scale18 : largest,
+        0n,
+    );
     const remainingIndex =
-        deficits.find((i) => amountsIn[i].amount > 0n) ??
-        amountsIn.findIndex((a) => a.amount > 0n);
+        deficits.find(
+            (i) =>
+                largestDeposit > 0n && amountsIn[i].scale18 === largestDeposit,
+        ) ??
+        amountsIn.findIndex(
+            (a) => largestDeposit > 0n && a.scale18 === largestDeposit,
+        );
     if (remainingIndex < 0) {
         throw new SDKError(
             'Price Impact',

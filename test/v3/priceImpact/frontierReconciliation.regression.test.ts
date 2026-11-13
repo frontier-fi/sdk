@@ -188,7 +188,7 @@ const fixtures: Fixture[] = [
         impact: 85_000_000_000_000_000n,
     },
     {
-        name: 'values a residual in a deposited token instead of dividing by zero',
+        name: 'uses exact-input on the final pair to avoid a reverse swap',
         inputs: [0n, 100n, 100n],
         deltas: [20n, -10n, -10n],
         swaps: [
@@ -200,16 +200,54 @@ const fixtures: Fixture[] = [
                 result: 10n,
             },
             {
-                kind: SwapKind.GivenOut,
+                kind: SwapKind.GivenIn,
                 from: 0,
                 to: 2,
                 amount: 10n,
-                result: 11n,
+                result: 9n,
             },
+        ],
+        residual: [0n, 0n, -1n],
+        impact: 5_000_000_000_000_000n,
+    },
+    {
+        name: 'reconciles a single-sided deposit without minimum-sensitive BPT ranking quotes',
+        inputs: [0n, 100n],
+        deltas: [20n, -20n],
+        zeroBPT: true,
+        swaps: [
+            {
+                kind: SwapKind.GivenIn,
+                from: 0,
+                to: 1,
+                amount: 20n,
+                result: 18n,
+            },
+        ],
+        residual: [0n, -2n],
+        impact: 10_000_000_000_000_000n,
+    },
+    {
+        name: 'normalizes a multi-token deficit in the largest scaled deposit',
+        inputs: [1n, 1000n],
+        decimals: [18, 6],
+        deltas: [-1n, -100n],
+        swaps: [
             { kind: SwapKind.GivenOut, from: 1, to: 0, amount: 1n, result: 2n },
         ],
-        residual: [0n, -2n, 0n],
-        impact: 10_000_000_000_000_000n,
+        residual: [0n, -102n],
+        impact: 51_000_000_000_000_000n,
+    },
+    {
+        name: 'keeps the largest-deposit normalization after token reordering',
+        inputs: [1000n, 1n],
+        decimals: [6, 18],
+        deltas: [-100n, -1n],
+        swaps: [
+            { kind: SwapKind.GivenOut, from: 0, to: 1, amount: 1n, result: 2n },
+        ],
+        residual: [-102n, 0n],
+        impact: 51_000_000_000_000_000n,
     },
     {
         name: 'keeps nonzero token balances when their BPT estimates round to zero',
@@ -410,6 +448,12 @@ describe.each(['regular', 'boosted'] as const)(
                 fixture.residual.map((d, i) => d * unit(i)),
             );
             expect(mocks.swap).toHaveBeenCalledTimes(fixture.swaps.length);
+            if (fixture.inputs?.filter((a) => a > 0n).length === 1) {
+                // No auxiliary add query is needed when the final direction
+                // is determined by the deposited token, even if it would
+                // return zero BPT or revert for a sub-minimum probe.
+                expect(add).toHaveBeenCalledTimes(1);
+            }
             expect(mocks.swap.mock.calls.length).toBeLessThanOrEqual(
                 fixture.deltas.length,
             );
