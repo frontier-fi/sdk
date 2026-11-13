@@ -30,4 +30,5 @@ jobs:
         run: pnpm test:all
         env:
           SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
+          BASE_RPC_URL: ${{ secrets.BASE_RPC_URL }}
 

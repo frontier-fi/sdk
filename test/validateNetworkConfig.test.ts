@@ -129,11 +129,15 @@ const CONTRACT_CHECKS: Record<string, ContractValidation> = {
 
 // ─── Chains to test ─────────────────────────────────────────────────────────
 
-const CHAINS_TO_TEST: ChainId[] = [ChainId.SEPOLIA];
+const CHAINS_TO_TEST: ChainId[] = [ChainId.BASE, ChainId.SEPOLIA];
 
 // ─── RPC resolution (env var with fallback, no Anvil) ───────────────────────
 
 const CHAIN_RPC: Record<number, { rpcEnv: string; fallBackRpc: string }> = {
+    [ChainId.BASE]: {
+        rpcEnv: 'BASE_RPC_URL',
+        fallBackRpc: 'https://mainnet.base.org',
+    },
     [ChainId.SEPOLIA]: {
         rpcEnv: 'SEPOLIA_RPC_URL',
         fallBackRpc: 'https://sepolia.gateway.tenderly.co',

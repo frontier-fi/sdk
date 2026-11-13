@@ -1,5 +1,5 @@
 import { Address, Chain } from 'viem';
-import { sepolia } from 'viem/chains';
+import { base, sepolia } from 'viem/chains';
 import { NativeToken } from '../entities/nativeToken';
 
 export const ZERO_ADDRESS: Address =
@@ -48,23 +48,35 @@ export const DECIMAL_SCALES = {
 export const SECONDS_PER_YEAR = 31536000n;
 
 export enum ChainId {
+    BASE = 8453,
     SEPOLIA = 11155111,
 }
 
 // The Frontier API requires the chain to be passed as an uppercase GqlChain string
 export const API_CHAIN_NAMES: Record<number, string> = {
+    [ChainId.BASE]: 'BASE',
     [ChainId.SEPOLIA]: 'SEPOLIA',
 };
 
 export const CHAINS: Record<number, Chain> = {
+    [ChainId.BASE]: base,
     [ChainId.SEPOLIA]: sepolia,
 };
 
 export const PERMIT2: Record<number, Address> = {
+    [ChainId.BASE]: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
     [ChainId.SEPOLIA]: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
 };
 
 export const NATIVE_ASSETS: Record<ChainId, NativeToken> = {
+    [ChainId.BASE]: new NativeToken(
+        ChainId.BASE,
+        NATIVE_ADDRESS,
+        18,
+        '0x4200000000000000000000000000000000000006',
+        'ETH',
+        'Ether',
+    ),
     [ChainId.SEPOLIA]: new NativeToken(
         ChainId.SEPOLIA,
         NATIVE_ADDRESS,
