@@ -11,7 +11,7 @@ import {
     NetworkRegistryResponse,
 } from './scripts.types';
 
-// Create a map that looks like ['11155111': '[ChainId.SEPOLIA]']
+// Create a map that looks like ['8453': '[ChainId.BASE]', '11155111': '[ChainId.SEPOLIA]']
 const chainIdToHumanKey = Object.fromEntries(
     Object.entries(ChainId)
         .filter(([key]) => Number.isNaN(Number(key))) // Filter out numeric keys (enum values)
