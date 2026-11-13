@@ -7,36 +7,27 @@ import {
     RemoveLiquidityRecoveryInput,
 } from '../removeLiquidity/types';
 import { PoolState, PoolStateWithUnderlyings } from '../types';
-import { InputValidatorComposableStable } from './composableStable/inputValidatorComposableStable';
-import { InputValidatorCowAmm } from './cowAmm/inputValidatorCowAmm';
 import { InputValidatorGyro } from './gyro/inputValidatorGyro';
 import { InputValidatorStable } from './stable/inputValidatorStable';
 import { InputValidatorBase } from './inputValidatorBase';
 import { InputValidatorWeighted } from './weighted/inputValidatorWeighted';
-import { InputValidatorLiquidityBootstrapping } from './liquidityBootstrapping/inputValidatorLiquidityBootstrapping';
-import { InputValidatorLiquidityBootstrappingFixedPrice } from './liquidityBootstrapping/inputValidatorLiquidityBootstrappingFixedPrice';
 import { ChainId, protocolVersionError, SDKError } from '@/utils';
 import { AddLiquidityBoostedInput } from '../addLiquidityBoosted/types';
-import { InputValidatorReClamm } from './reClamm/inputValidatorReClamm';
+
 export class InputValidator {
     validators: Record<string, InputValidatorBase> = {};
 
     constructor() {
+        const gyroValidator = new InputValidatorGyro();
+        const stableValidator = new InputValidatorStable();
+        const weightedValidator = new InputValidatorWeighted();
         this.validators = {
-            [PoolType.ComposableStable]: new InputValidatorComposableStable(),
-            [PoolType.CowAmm]: new InputValidatorCowAmm(),
-            [PoolType.Gyro2]: new InputValidatorGyro(),
-            [PoolType.Gyro3]: new InputValidatorGyro(),
-            [PoolType.GyroE]: new InputValidatorGyro(),
-            [PoolType.MetaStable]: new InputValidatorStable(),
-            [PoolType.Stable]: new InputValidatorStable(),
-            [PoolType.Weighted]: new InputValidatorWeighted(),
-            [PoolType.StableSurge]: new InputValidatorStable(),
-            [PoolType.ReClamm]: new InputValidatorReClamm(),
-            [PoolType.LiquidityBootstrapping]:
-                new InputValidatorLiquidityBootstrapping(),
-            [PoolType.LiquidityBootstrappingFixedPrice]:
-                new InputValidatorLiquidityBootstrappingFixedPrice(),
+            [PoolType.GyroE]: gyroValidator,
+            ECLP: gyroValidator,
+            [PoolType.Stable]: stableValidator,
+            STABLE: stableValidator,
+            [PoolType.Weighted]: weightedValidator,
+            WEIGHTED: weightedValidator,
         };
     }
 
@@ -123,7 +114,7 @@ export class InputValidator {
             throw protocolVersionError(
                 'buildCallWithPermit2',
                 input.protocolVersion,
-                'buildCallWithPermit2 is supported on Balancer v3 only.',
+                'buildCallWithPermit2 is supported on Frontier v3 only.',
             );
         }
     }

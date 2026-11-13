@@ -62,21 +62,18 @@ const swapV3 = async () => {
 
     // User defines the following params for sending swap transaction
     const sender = userAccount;
-    const recipient = userAccount;
     const slippage = Slippage.fromPercentage('0.1');
     const deadline = 999999999999999999n; // Infinity
     const wethIsEth = false;
 
     const swapBuildCallInput: SwapBuildCallInput = {
-        sender,
-        recipient,
         slippage,
         deadline,
         wethIsEth,
         queryOutput,
     };
 
-    // Use signature to permit2 approve transfer of tokens to Balancer's cannonical Router
+    // Use signature to permit2 approve transfer of tokens to Frontier's canonical Router
     const signedPermit2Batch = await Permit2Helper.signSwapApproval({
         ...swapBuildCallInput,
         client,

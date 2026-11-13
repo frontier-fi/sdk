@@ -2,20 +2,14 @@ import { TokenAmount } from '../tokenAmount';
 import { Slippage } from '../slippage';
 import { PoolState } from '../types';
 import { Address, Hex, InputAmount } from '../../types';
-import {
-    AddLiquidityV2BuildCallInput,
-    AddLiquidityV2QueryOutput,
-} from './addLiquidityV2/types';
 import { Permit2 } from '../permit2Helper';
 
 export enum AddLiquidityKind {
     Unbalanced = 'Unbalanced',
     SingleToken = 'SingleToken',
     Proportional = 'Proportional',
-    UnbalancedViaSwap = 'UnbalancedViaSwap',
 }
 
-// This will be extended for each pools specific input requirements
 export type AddLiquidityBaseInput = {
     chainId: number;
     rpcUrl: string;
@@ -52,13 +46,11 @@ export type AddLiquidityBaseQueryOutput = {
     amountsIn: TokenAmount[];
     chainId: number;
     tokenInIndex?: number;
-    protocolVersion: 1 | 2 | 3;
+    protocolVersion: 3;
     to: Address;
 };
 
-export type AddLiquidityQueryOutput =
-    | AddLiquidityBaseQueryOutput
-    | AddLiquidityV2QueryOutput;
+export type AddLiquidityQueryOutput = AddLiquidityBaseQueryOutput;
 
 export type AddLiquidityBaseBuildCallInput = {
     slippage: Slippage;
@@ -69,9 +61,7 @@ export type AddLiquidityV3BuildCallInput = AddLiquidityBaseBuildCallInput & {
     userData: Hex;
 };
 
-export type AddLiquidityBuildCallInput =
-    | AddLiquidityV3BuildCallInput
-    | AddLiquidityV2BuildCallInput;
+export type AddLiquidityBuildCallInput = AddLiquidityV3BuildCallInput;
 
 export interface AddLiquidityBase {
     query(
@@ -96,12 +86,4 @@ export type AddLiquidityBuildCallOutput = {
 
 export type AddLiquidityConfig = {
     customAddLiquidityTypes: Record<string, AddLiquidityBase>;
-};
-
-// type exposed because FE team uses it for batching add liquidity and stake operations
-export type JoinPoolRequest = {
-    assets: Address[];
-    maxAmountsIn: readonly bigint[];
-    userData: Hex;
-    fromInternalBalance: boolean;
 };

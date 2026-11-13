@@ -9,8 +9,8 @@ import {
     SwapKind,
 } from '@/index';
 import {
-    balancerBatchRouterAbiExtended,
-    balancerRouterAbiExtended,
+    frontierBatchRouterAbiExtended,
+    frontierRouterAbiExtended,
 } from '@/abi';
 import type { Path } from '@/entities/swap';
 
@@ -87,8 +87,8 @@ describe('Frontier Sepolia native swap funding', () => {
                     expect(tx.value).toBe(expectedValue);
                     const decoded = decodeFunctionData({
                         abi: batch
-                            ? balancerBatchRouterAbiExtended
-                            : balancerRouterAbiExtended,
+                            ? frontierBatchRouterAbiExtended
+                            : frontierRouterAbiExtended,
                         data: tx.callData,
                     });
                     expect(decoded.functionName).toBe(

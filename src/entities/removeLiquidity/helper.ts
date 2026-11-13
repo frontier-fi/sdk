@@ -14,23 +14,17 @@ export const getAmountsQuery = (
     bptIndex = -1,
 ): RemoveLiquidityAmounts => {
     switch (input.kind) {
-        case RemoveLiquidityKind.Unbalanced:
-            return {
-                minAmountsOut: getAmounts(tokens, input.amountsOut),
-                tokenOutIndex: undefined,
-                maxBptAmountIn: MAX_UINT256, // maxAmountIn set to max when querying
-            };
         case RemoveLiquidityKind.SingleTokenExactOut:
             return {
                 minAmountsOut: getAmounts(tokens, [input.amountOut]),
                 tokenOutIndex: tokens
                     .filter((_, index) => index !== bptIndex)
                     .findIndex((t) => t.isSameAddress(input.amountOut.address)),
-                maxBptAmountIn: MAX_UINT256, // maxAmountIn set to max when querying
+                maxBptAmountIn: MAX_UINT256,
             };
         case RemoveLiquidityKind.SingleTokenExactIn:
             return {
-                minAmountsOut: Array(tokens.length).fill(1n), // minAmountsOut set to 1 wei when querying
+                minAmountsOut: Array(tokens.length).fill(1n),
                 tokenOutIndex: tokens
                     .filter((_, index) => index !== bptIndex)
                     .findIndex((t) => t.isSameAddress(input.tokenOut)),
@@ -38,13 +32,13 @@ export const getAmountsQuery = (
             };
         case RemoveLiquidityKind.Proportional:
             return {
-                minAmountsOut: Array(tokens.length).fill(1n), // minAmountsOut set to 1 wei when querying
+                minAmountsOut: Array(tokens.length).fill(1n),
                 tokenOutIndex: undefined,
                 maxBptAmountIn: input.bptIn.rawAmount,
             };
         case RemoveLiquidityKind.Recovery:
             return {
-                minAmountsOut: Array(tokens.length).fill(1n), // minAmountsOut set to 1 wei when querying
+                minAmountsOut: Array(tokens.length).fill(1n),
                 tokenOutIndex: undefined,
                 maxBptAmountIn: input.bptIn.rawAmount,
             };
@@ -55,7 +49,6 @@ export const getAmountsCall = (
     input: RemoveLiquidityBuildCallInput,
 ): RemoveLiquidityAmounts => {
     switch (input.removeLiquidityKind) {
-        case RemoveLiquidityKind.Unbalanced:
         case RemoveLiquidityKind.SingleTokenExactOut:
             return {
                 minAmountsOut: input.amountsOut.map((a) => a.amount),

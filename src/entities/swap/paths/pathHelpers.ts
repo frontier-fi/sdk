@@ -1,6 +1,10 @@
 import { PathWithAmount } from './pathWithAmount';
 import { TokenAmount } from '../../tokenAmount';
-import { inputValidationError, isSameAddress } from '@/utils';
+import {
+    inputValidationError,
+    isSameAddress,
+    protocolVersionError,
+} from '@/utils';
 import { Path } from './types';
 import { Address } from 'viem';
 
@@ -56,15 +60,12 @@ export function validatePaths(paths: Path[]) {
             'All paths must contain tokens length equal pools length + 1',
         );
 
-    validateBufferVersion(paths);
-    validateBufferLength(paths);
+    const invalidVersionPath = paths.find((p) => p.protocolVersion !== 3);
+    if (invalidVersionPath) {
+        throw protocolVersionError('Swap', invalidVersionPath.protocolVersion);
+    }
 
-    const protocolVersion = paths[0].protocolVersion;
-    if (!paths.every((p) => p.protocolVersion === protocolVersion))
-        throw inputValidationError(
-            'Swap',
-            'All paths must use same Balancer version.',
-        );
+    validateBufferLength(paths);
 
     const tokenIn = paths[0].tokens[0].address.toLowerCase();
     if (paths.some((p) => p.tokens[0].address.toLowerCase() !== tokenIn))
@@ -88,21 +89,6 @@ export function validatePaths(paths: Path[]) {
         );
 }
 
-function validateBufferVersion(paths: Path[]) {
-    if (
-        !paths.every((p) => {
-            return p.isBuffer?.some((b) => b === true)
-                ? p.protocolVersion === 3
-                : true;
-        })
-    ) {
-        throw inputValidationError(
-            'Swap',
-            'Swap with buffers not supported in Balancer v2.',
-        );
-    }
-}
-
 function validateBufferLength(paths: Path[]) {
     if (
         !paths.every((p) => {
@@ -116,15 +102,6 @@ function validateBufferLength(paths: Path[]) {
     }
 }
 
-/**
- * Determines if the given paths represent a batch swap.
- *
- * A batch swap is identified by one of the following conditions:
- * - There is more than one path.
- * - The first path contains more than one pool.
- * - The input token is the same as the first pool in the first path. (a BPT swap)
- * - The output token is the same as the first pool in the first path. (a BPT swap)
- */
 export function isBatchSwap(
     paths: Path[],
     inputToken: Address,

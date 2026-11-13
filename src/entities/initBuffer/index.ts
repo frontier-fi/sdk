@@ -6,8 +6,8 @@ import { Permit2 } from '@/entities/permit2Helper';
 import { doInitBufferQuery } from './doInitBufferQuery';
 import { AddressProvider } from '../inputValidator/utils/addressProvider';
 import {
-    balancerBufferRouterAbiExtended,
-    balancerRouterAbiExtended,
+    frontierBufferRouterAbiExtended,
+    frontierRouterAbiExtended,
 } from '@/abi';
 
 import {
@@ -51,7 +51,7 @@ export class InitBufferV3 {
         const minIssuedShares = input.slippage.applyTo(input.issuedShares, -1);
 
         const callData = encodeFunctionData({
-            abi: balancerBufferRouterAbiExtended,
+            abi: frontierBufferRouterAbiExtended,
             functionName: 'initializeBuffer',
             args: [
                 input.wrappedAmountIn.token.address,
@@ -84,7 +84,7 @@ export class InitBufferV3 {
         ] as const;
 
         const callData = encodeFunctionData({
-            abi: balancerRouterAbiExtended,
+            abi: frontierRouterAbiExtended,
             functionName: 'permitBatchAndCall',
             args,
         });

@@ -3,7 +3,7 @@ import { createPublicClient, Hex, http } from 'viem';
 import { ChainId, CHAINS } from '@/utils';
 
 import { Address } from '@/types';
-import { balancerCompositeLiquidityRouterBoostedAbiExtended } from '@/abi';
+import { frontierCompositeLiquidityRouterBoostedAbiExtended } from '@/abi';
 import { AddressProvider } from '@/entities/inputValidator/utils/addressProvider';
 
 export const doAddLiquidityUnbalancedQuery = async (
@@ -23,7 +23,7 @@ export const doAddLiquidityUnbalancedQuery = async (
 
     const { result: bptAmountOut } = await client.simulateContract({
         address: AddressProvider.CompositeLiquidityRouter(chainId),
-        abi: balancerCompositeLiquidityRouterBoostedAbiExtended,
+        abi: frontierCompositeLiquidityRouterBoostedAbiExtended,
         functionName: 'queryAddLiquidityUnbalancedToERC4626Pool',
         args: [
             poolAddress,

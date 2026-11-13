@@ -13,7 +13,6 @@ import {
 } from 'viem';
 import {
     Address,
-    // balancerV3Contracts,
     CHAINS,
     ChainId,
     PERMIT2,

@@ -7,17 +7,8 @@ export default defineConfig(({ mode }) => {
 
     return {
         define: {
-            'process.env.ETHEREUM_RPC_URL': JSON.stringify(
-                env.ETHEREUM_RPC_URL,
-            ),
-            'process.env.POLYGON_RPC_URL': JSON.stringify(env.POLYGON_RPC_URL),
-            'process.env.ARBITRUM_RPC_URL': JSON.stringify(
-                env.ARBITRUM_RPC_URL,
-            ),
-            'process.env.FANTOM_RPC_URL': JSON.stringify(env.FANTOM_RPC_URL),
-            'process.env.OPTIMISM_RPC_URL': JSON.stringify(
-                env.OPTIMISM_RPC_URL,
-            ),
+            'process.env.SEPOLIA_RPC_URL': JSON.stringify(env.SEPOLIA_RPC_URL),
+            'process.env.BASE_RPC_URL': JSON.stringify(env.BASE_RPC_URL),
             'process.env.SKIP_GLOBAL_SETUP': JSON.stringify(
                 env.SKIP_GLOBAL_SETUP,
             ),

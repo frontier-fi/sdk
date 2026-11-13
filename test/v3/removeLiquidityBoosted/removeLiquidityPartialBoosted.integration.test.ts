@@ -19,7 +19,6 @@ import {
     CHAINS,
     PublicWalletClient,
     Token,
-    balancerV3Contracts,
     Slippage,
     RemoveLiquidityBoostedV3,
     RemoveLiquidityBoostedProportionalInput,
@@ -36,9 +35,19 @@ import {
     sendTransactionGetBalances,
     TOKENS,
 } from 'test/lib/utils';
-import { validateTokenAmounts } from 'test/lib/utils/removeLiquidityNestedHelper';
 import { partialBoostedPool_WETH_stataUSDT } from 'test/mockData/partialBoostedPool';
 import { AddressProvider } from '@/entities/inputValidator/utils/addressProvider';
+
+function validateTokenAmounts(
+    tokenAmounts: TokenAmount[],
+    expectedTokens: Token[],
+) {
+    expect(tokenAmounts.length).to.eq(expectedTokens.length);
+    tokenAmounts.forEach((tokenAmount, i) => {
+        expect(tokenAmount.token).to.deep.eq(expectedTokens[i]);
+        expect(tokenAmount.amount > 0n).to.be.true;
+    });
+}
 
 const chainId = ChainId.SEPOLIA;
 const USDT = TOKENS[chainId].USDT_AAVE;

@@ -1,16 +1,12 @@
-import {
-    CreatePoolV2WeightedInput,
-    CreatePoolV3WeightedInput,
-} from '../../createPool/types';
+import { CreatePoolV3WeightedInput } from '../../createPool/types';
 import { InputValidatorBase } from '../inputValidatorBase';
 import { inputValidationError } from '@/utils';
 
 import { validateCreatePoolTokens } from '../utils/validateTokens';
 import { validateCreatePoolTokenConfig } from '../utils/validateCreatePoolTokenConfig';
+
 export class InputValidatorWeighted extends InputValidatorBase {
-    validateCreatePool(
-        input: CreatePoolV2WeightedInput | CreatePoolV3WeightedInput,
-    ) {
+    validateCreatePool(input: CreatePoolV3WeightedInput) {
         validateCreatePoolTokens(input.tokens);
         validateCreatePoolTokenConfig(input);
         if (input.tokens.length > 8) {

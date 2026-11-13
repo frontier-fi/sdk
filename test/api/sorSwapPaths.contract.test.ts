@@ -1,18 +1,17 @@
 import { describe, it, expect } from 'vitest';
-import { BalancerApi } from '@/data/providers/balancer-api';
+import { FrontierApi } from '@/data/providers/frontier-api';
 import { API_ENDPOINT, ChainId } from '@/utils';
 import { Address } from 'viem';
 import { Token, TokenAmount } from '@/entities';
 import { SwapKind } from '@/types';
 
-// Inline minimal constants
-const CHAIN_ID = ChainId.MAINNET;
-const TOKEN_IN = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' as Address; // WETH
-const TOKEN_OUT = '0xA0b86991c6218b36c1d19d4a2e9eb0ce3606eb48' as Address; // USDC
+const CHAIN_ID = ChainId.SEPOLIA;
+const TOKEN_IN = '0xfff9976782d46cc05630d1f6ebab18b2324d6b14' as Address; // Sepolia WETH
+const TOKEN_OUT = '0x80d6d3946ed8a1da4e226aa21ccddc32bd127d1a' as Address; // Sepolia USDC
 
 describe('contract: sor swap paths (live API)', () => {
-    const api = new BalancerApi(API_ENDPOINT, CHAIN_ID, {
-        clientName: 'b-sdk-e2e-tests',
+    const api = new FrontierApi(API_ENDPOINT, CHAIN_ID, {
+        clientName: 'frontier-sdk-e2e-tests',
         clientVersion: '0.0.0',
     });
 

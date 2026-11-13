@@ -1,16 +1,17 @@
 /**
- * Example showing how to add liquidity to a pool.
+ * Example showing how to add liquidity proportionally to a V3 pool.
  * (Runs against a local Anvil fork)
  *
  * Run with:
  * pnpm example ./examples/addLiquidity/addLiquidityProportional.ts
  */
-import { Address } from 'viem';
+import { Address, parseEther } from 'viem';
 import {
     AddLiquidityInput,
     AddLiquidityKind,
     AddLiquidity,
-    BalancerApi,
+    FrontierApi,
+    API_ENDPOINT,
     ChainId,
     Slippage,
 } from '../../src';
@@ -20,26 +21,21 @@ import { getSlot } from 'examples/lib/getSlot';
 
 async function runAgainstFork() {
     // User defined inputs
-    const { rpcUrl } = await startFork(
-        ANVIL_NETWORKS.MAINNET,
-        undefined,
-        20520774n,
-    );
-    const chainId = ChainId.MAINNET;
+    const { rpcUrl } = await startFork(ANVIL_NETWORKS.SEPOLIA);
+    const chainId = ChainId.SEPOLIA;
     const userAccount = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045';
-    // USDC-WETH CowAmm pool
     const pool = {
-        id: '0xf08d4dea369c456d26a3168ff0024b904f2d8b91',
-        address: '0xf08d4dea369c456d26a3168ff0024b904f2d8b91' as Address,
+        id: '0x2ff3b96e0057a1f25f1d62ab800554ccdb268ab8',
+        address: '0x2ff3b96e0057a1f25f1d62ab800554ccdb268ab8' as Address,
     };
 
     const referenceAmount = {
-        rawAmount: 158708n,
-        decimals: 6,
-        address: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48' as Address, // USDC
+        rawAmount: parseEther('0.0001'),
+        decimals: 18,
+        address: '0x7b79995e5f793a07bc00c21412e50ecae098e7f9' as Address,
     };
 
-    const slippage = Slippage.fromPercentage('0'); // 1%
+    const slippage = Slippage.fromPercentage('1'); // 1%
 
     const call = await addLiquidityProportional({
         rpcUrl,
@@ -49,7 +45,6 @@ async function runAgainstFork() {
         slippage,
     });
 
-    // Make the tx against the local fork and print the result
     await makeForkTx(
         call,
         {
@@ -74,11 +69,9 @@ const addLiquidityProportional = async ({
     referenceAmount,
     slippage,
 }) => {
-    // API + on-chain calls are used to fetch relevant pool data
-    const balancerApi = new BalancerApi('https://api.frontier.fi/', chainId);
-    const poolState = await balancerApi.pools.fetchPoolState(poolId);
+    const frontierApi = new FrontierApi(API_ENDPOINT, chainId);
+    const poolState = await frontierApi.pools.fetchPoolState(poolId);
 
-    // Construct the AddLiquidityInput, in this case an AddLiquidityUnbalanced
     const addLiquidityInput: AddLiquidityInput = {
         referenceAmount,
         chainId,
@@ -86,7 +79,6 @@ const addLiquidityProportional = async ({
         kind: AddLiquidityKind.Proportional,
     };
 
-    // Simulate addLiquidity to get the amount of BPT out
     const addLiquidity = new AddLiquidity();
     const queryOutput = await addLiquidity.query(addLiquidityInput, poolState);
 
@@ -97,7 +89,6 @@ const addLiquidityProportional = async ({
     );
     console.log(`BPT Out: ${queryOutput.bptOut.amount.toString()}`);
 
-    // Apply slippage to the BPT amount received from the query and construct the call
     const call = addLiquidity.buildCall({
         ...queryOutput,
         slippage,

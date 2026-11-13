@@ -15,6 +15,7 @@ import { validateCreatePoolTokenConfig } from '../utils/validateCreatePoolTokenC
 import { inputValidationError, poolTypeError } from '@/utils';
 import { CreatePoolGyroECLPInput } from '@/entities/createPool';
 import { GyroECLPMath } from '@balancer-labs/balancer-maths';
+
 export class InputValidatorGyro extends InputValidatorBase {
     validateCreatePool(input: CreatePoolGyroECLPInput) {
         validateCreatePoolTokenConfig(input);
@@ -23,7 +24,7 @@ export class InputValidatorGyro extends InputValidatorBase {
         if (input.tokens.length !== 2) {
             throw inputValidationError(
                 'Create Pool',
-                'GyroECLP pools support only two tokens on Balancer v3',
+                'GyroECLP pools support only two tokens on Frontier v3',
             );
         }
 
@@ -39,6 +40,7 @@ export class InputValidatorGyro extends InputValidatorBase {
             );
         }
     }
+
     validateAddLiquidity(
         addLiquidityInput: AddLiquidityInput,
         poolState: PoolState,

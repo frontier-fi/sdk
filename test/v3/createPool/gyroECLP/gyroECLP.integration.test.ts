@@ -21,7 +21,7 @@ import {
     vaultExtensionAbi_V3,
     PublicWalletClient,
     InitPoolDataProvider,
-    mockGyroEclpPoolAbi_V3,
+    gyroECLPAbi_V3,
     normalizeEclpParamsAndTokens,
 } from 'src';
 import { ANVIL_NETWORKS, startFork } from '../../../anvil/anvil-global-setup';
@@ -160,13 +160,13 @@ describe('GyroECLP - create & init', () => {
     test('equivalent ECLP params for pool created with inverted input', async () => {
         const eclpParams = await client.readContract({
             address: poolAddress,
-            abi: mockGyroEclpPoolAbi_V3,
+            abi: gyroECLPAbi_V3,
             functionName: 'getGyroECLPPoolImmutableData',
             args: [],
         });
         const eclpParamsWithInvertedInput = await client.readContract({
             address: poolAddressInvertedParams,
-            abi: mockGyroEclpPoolAbi_V3,
+            abi: gyroECLPAbi_V3,
             functionName: 'getGyroECLPPoolImmutableData',
             args: [],
         });

@@ -16,8 +16,7 @@ export type NetworkRegistryResponse = {
     [key: string]: {
         contracts: { name: string; address: Address }[];
         status: 'ACTIVE' | 'DEPRECATED' | 'SCRIPT';
-        // Optional: frontier-fi/deployments omits this (defaults to v3)
-        version?: 'v2' | 'v3';
+        version?: 'v3';
     };
 };
 

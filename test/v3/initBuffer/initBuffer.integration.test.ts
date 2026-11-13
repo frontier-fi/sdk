@@ -23,7 +23,6 @@ import {
     Permit2Helper,
     PERMIT2,
     PublicWalletClient,
-    balancerV3Contracts,
 } from '../../../src';
 import {
     TOKENS,
@@ -36,9 +35,9 @@ import { ANVIL_NETWORKS, startFork } from '../../anvil/anvil-global-setup';
 import { InitBufferBuildCallInput } from '@/entities/initBuffer/types';
 import { AddressProvider } from '@/entities/inputValidator/utils/addressProvider';
 
-const chainId = ChainId.MAINNET;
-const USDC = TOKENS[chainId].USDC;
-const gearboxUSDC = TOKENS[chainId].gearboxUSDC;
+const chainId = ChainId.SEPOLIA;
+const USDC = TOKENS[chainId].USDC_AAVE;
+const gearboxUSDC = TOKENS[chainId].stataUSDC;
 
 describe('Buffer Init', () => {
     let client: PublicWalletClient & TestActions;

@@ -11,7 +11,6 @@ import {
 import { CHAINS, PublicWalletClient } from '../../src';
 import {
     forkSetup,
-    forkSetupCowAmm,
     sendTransactionGetBalances,
 } from '../../test/lib/utils/helper';
 
@@ -40,7 +39,7 @@ export async function makeForkTx(
         client?: PublicWalletClient & TestActions;
     },
     tokensForBalanceCheck: Address[],
-    protocolVersion: 1 | 2 | 3,
+    protocolVersion: 3 = 3,
     approveOnPermit2 = true,
 ) {
     const client =
@@ -54,27 +53,16 @@ export async function makeForkTx(
             .extend(publicActions)
             .extend(walletActions);
 
-    if (protocolVersion === 1) {
-        await forkSetupCowAmm(
-            client,
-            forkConfig.impersonateAccount,
-            forkConfig.forkTokens.map((t) => t.address),
-            forkConfig.forkTokens.map((t) => t.slot),
-            forkConfig.forkTokens.map((t) => t.rawBalance),
-            tx.to,
-        );
-    } else {
-        await forkSetup(
-            client,
-            forkConfig.impersonateAccount,
-            forkConfig.forkTokens.map((t) => t.address),
-            forkConfig.forkTokens.map((t) => t.slot),
-            forkConfig.forkTokens.map((t) => t.rawBalance),
-            undefined,
-            protocolVersion,
-            approveOnPermit2,
-        );
-    }
+    await forkSetup(
+        client,
+        forkConfig.impersonateAccount,
+        forkConfig.forkTokens.map((t) => t.address),
+        forkConfig.forkTokens.map((t) => t.slot),
+        forkConfig.forkTokens.map((t) => t.rawBalance),
+        undefined,
+        protocolVersion,
+        approveOnPermit2,
+    );
 
     console.log('\nSending tx...');
     const { transactionReceipt, balanceDeltas } =

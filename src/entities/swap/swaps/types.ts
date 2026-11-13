@@ -7,7 +7,7 @@ import {
     SwapBuildOutputExactIn,
     SwapBuildOutputExactOut,
 } from '../../..';
-import { SingleSwap, SwapKind, BatchSwapStep } from '../../../types';
+import { SwapKind } from '../../../types';
 import { PathWithAmount } from '../paths/pathWithAmount';
 import {
     SingleTokenExactIn,
@@ -23,8 +23,6 @@ export interface SwapBase {
     paths: PathWithAmount[];
     swapKind: SwapKind;
     swaps:
-        | BatchSwapStep[]
-        | SingleSwap
         | SingleTokenExactIn
         | SingleTokenExactOut
         | SwapPathExactAmountIn[]

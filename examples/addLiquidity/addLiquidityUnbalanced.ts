@@ -10,7 +10,7 @@ import {
     AddLiquidityInput,
     AddLiquidityKind,
     AddLiquidity,
-    BalancerApi,
+    FrontierApi,
     ChainId,
     PriceImpact,
     Slippage,
@@ -78,8 +78,8 @@ export const addLiquidityExample = async ({
     slippage,
 }) => {
     // API is used to fetch relevant pool data
-    const balancerApi = new BalancerApi(TEST_API_ENDPOINT, chainId);
-    const poolState = await balancerApi.pools.fetchPoolState(poolId);
+    const frontierApi = new FrontierApi(TEST_API_ENDPOINT, chainId);
+    const poolState = await frontierApi.pools.fetchPoolState(poolId);
 
     // Construct the AddLiquidityInput, in this case an AddLiquidityUnbalanced
     const addLiquidityInput: AddLiquidityInput = {

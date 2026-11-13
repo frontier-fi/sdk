@@ -1,27 +1,24 @@
 import { Address, parseUnits } from 'viem';
 import { InputAmount } from '@/types';
 import { HumanAmount } from '@/data';
-import { inputValidationError, isSameAddress, MathSol } from '@/utils';
+import {
+    inputValidationError,
+    isSameAddress,
+    MathSol,
+    protocolVersionError,
+} from '@/utils';
 import { AddLiquidityProportionalInput } from '../addLiquidity/types';
 import {
     PoolState,
     PoolStateWithUnderlyingBalances,
     PoolStateWithUnderlyings,
 } from '../types';
-import { getPoolStateWithBalancesV2 } from './getPoolStateWithBalancesV2';
 import {
     getBoostedPoolStateWithBalancesV3,
     getPoolStateWithBalancesV3,
 } from './getPoolStateWithBalancesV3';
 import { AddLiquidityBoostedProportionalInput } from '../addLiquidityBoosted/types';
 
-/**
- * For a given pool and reference token amount, calculate all token amounts proportional to their balances within the pool.
- *
- * @param pool
- * @param referenceAmount
- * @returns Proportional amounts rounded down based on smart contract implementation for calculateProportionalAmountsOut.
- */
 export function calculateProportionalAmounts(
     pool: {
         address: Address;
@@ -33,7 +30,6 @@ export function calculateProportionalAmounts(
     tokenAmounts: InputAmount[];
     bptAmount: InputAmount;
 } {
-    // ensure that bpt is taken into account even with pools that do not contain its BPT as a token
     const tokensWithoutBpt = pool.tokens.filter(
         (t) => !pool.address.toLowerCase().includes(t.address.toLowerCase()),
     );
@@ -46,7 +42,6 @@ export function calculateProportionalAmounts(
         },
     ];
 
-    // validate that input amount is relative to a token in the pool or its BPT
     const referenceTokenIndex = tokensWithBpt.findIndex(
         (t) =>
             t.address.toLowerCase() === referenceAmount.address.toLowerCase(),
@@ -58,12 +53,10 @@ export function calculateProportionalAmounts(
         );
     }
 
-    // scale up balances from HumanAmount to RawAmount
     const balances = tokensWithBpt.map((t) =>
         parseUnits(t.balance, t.decimals),
     );
 
-    // calculate proportional amounts
     const referenceTokenBalance = balances[referenceTokenIndex];
     const ratio = MathSol.divDownFixed(
         referenceAmount.rawAmount,
@@ -87,63 +80,31 @@ export function calculateProportionalAmounts(
     };
 }
 
-/**
- * Calculate the BPT amount for a given reference amount in a pool (rounded down).
- *
- * Note: this is used in the AddLiquidityProportional query scenario, where a non-bpt refenceAmount is provided and
- * the SDK needs to infer the corresponding bptOut. Rounding down favors leaving some dust behind instead of returning an amount
- * slightly higher than the referenceAmount provided, in order to prevent a revert in the add liquidity proportional transaction.
- * @param input
- * @param poolState
- * @returns
- */
 export const getBptAmountFromReferenceAmount = async (
     input: AddLiquidityProportionalInput,
     poolState: PoolState,
 ): Promise<InputAmount> => {
-    let bptAmount: InputAmount;
-    if (input.referenceAmount.address === poolState.address) {
-        bptAmount = input.referenceAmount;
-    } else {
-        switch (poolState.protocolVersion) {
-            case 1:
-                throw new Error('CowAmm pools should use CowAmm helpers');
-            case 2: {
-                const poolStateWithBalances = await getPoolStateWithBalancesV2(
-                    poolState,
-                    input.chainId,
-                    input.rpcUrl,
-                );
-                ({ bptAmount } = calculateProportionalAmounts(
-                    poolStateWithBalances,
-                    input.referenceAmount,
-                ));
-                break;
-            }
-            case 3: {
-                const poolStateWithBalances = await getPoolStateWithBalancesV3(
-                    poolState,
-                    input.chainId,
-                    input.rpcUrl,
-                );
-                ({ bptAmount } = calculateProportionalAmounts(
-                    poolStateWithBalances,
-                    input.referenceAmount,
-                ));
-                break;
-            }
-        }
+    if (poolState.protocolVersion !== 3) {
+        throw protocolVersionError(
+            'Calculate Proportional Amounts',
+            poolState.protocolVersion,
+        );
     }
+    if (input.referenceAmount.address === poolState.address) {
+        return input.referenceAmount;
+    }
+    const poolStateWithBalances = await getPoolStateWithBalancesV3(
+        poolState,
+        input.chainId,
+        input.rpcUrl,
+    );
+    const { bptAmount } = calculateProportionalAmounts(
+        poolStateWithBalances,
+        input.referenceAmount,
+    );
     return bptAmount;
 };
 
-/**
- * Calculate the BPT amount for a given reference amount in a boosted pool (rounded down).
- *
- * @param input
- * @param poolState
- * @returns
- */
 export const getBptAmountFromReferenceAmountBoosted = async (
     input: AddLiquidityBoostedProportionalInput,
     poolStateWithUnderlyings: PoolStateWithUnderlyings,

@@ -2,21 +2,12 @@
 
 [![npm version](https://img.shields.io/npm/v/@frontier-fi/sdk/latest.svg)](https://www.npmjs.com/package/@frontier-fi/sdk/v/latest)
 
-SDK for Frontier, forked from Balancer SDK 6.2.1. The first Frontier package is
-`@frontier-fi/sdk@0.1.0`. It retains the inherited public API, uses Frontier's
-canonical Sepolia WETH for native-token funding, and does not remove V2 support
-or replace consumers' Frontier `AddressProvider` configuration.
+TypeScript SDK for interacting with the Frontier V3 protocol on supported chains (`Base` and `Sepolia`).
 
 ## Installation
 
 ```sh
 pnpm add @frontier-fi/sdk
-```
-
-Existing consumers can retain their `@balancer/sdk` imports with an npm alias:
-
-```sh
-pnpm add '@balancer/sdk@npm:@frontier-fi/sdk@0.1.0'
 ```
 
 ## Local Setup
@@ -42,17 +33,15 @@ transaction execution against a fork of Frontier's deployed contracts.
 
 `pnpm test:no-integration` excludes fork integration tests and live API contract
 tests (`*.integration.test.ts` and `*.contract.test.ts`). It still validates
-configured deployments via RPC. `pnpm test:all` includes the live API tests;
-their inherited Balancer pool fixtures require a compatible API and dataset.
+configured deployments via RPC and chain setup against the Frontier API.
+`pnpm test:all` includes Anvil fork integration tests and live API contract tests.
 
 `pnpm test`
 
-Testing runs against a local anvil fork and requires the following RPC URL to be configured in your .env file:
+Testing runs against a local Anvil fork and uses the following RPC URLs in your `.env` file (with public RPC fallbacks when unset):
 ```
-ETHEREUM_RPC_URL
-POLYGON_RPC_URL
-FANTOM_RPC_URL
 SEPOLIA_RPC_URL
+BASE_RPC_URL
 ```
 ### Anvil Client
 

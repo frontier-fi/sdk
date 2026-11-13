@@ -1,9 +1,9 @@
 // pnpm test tokenAmount.test.ts
 
-import { ChainId, NATIVE_ASSETS, TokenAmount } from '@balancer/sdk';
+import { ChainId, NATIVE_ASSETS, TokenAmount } from '@frontier-fi/sdk';
 import { parseUnits } from 'viem';
 
-const weth = NATIVE_ASSETS[ChainId.MAINNET];
+const weth = NATIVE_ASSETS[ChainId.SEPOLIA];
 
 it('fromRawAmount', () => {
     const rawAmount = parseUnits('1.23456789123456789', weth.decimals);

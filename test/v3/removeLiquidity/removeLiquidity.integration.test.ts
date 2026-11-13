@@ -5,6 +5,7 @@ config();
 import {
     createTestClient,
     http,
+    parseAbi,
     parseEther,
     parseUnits,
     publicActions,
@@ -19,9 +20,6 @@ import {
     AddLiquidityKind,
     AddLiquidityUnbalancedInput,
     CHAINS,
-    ADMIN_OF_AUTHORIZER,
-    AUTHORIZER,
-    authorizerAbi_V2,
     ChainId,
     Hex,
     InputAmount,
@@ -34,9 +32,7 @@ import {
     RemoveLiquidityProportionalInput,
     RemoveLiquiditySingleTokenExactInInput,
     RemoveLiquiditySingleTokenExactOutInput,
-    RemoveLiquidityUnbalancedInput,
     RemoveLiquidityRecoveryInput,
-    protocolVersionError,
     vaultAdminAbi_V3,
     PublicWalletClient,
 } from 'src';
@@ -162,37 +158,6 @@ describe('remove liquidity test', () => {
                 txInput.poolState.address,
                 AddressProvider.Router(chainId),
             );
-        });
-
-        describe('unbalanced', async () => {
-            let input: Omit<RemoveLiquidityUnbalancedInput, 'amountsOut'>;
-            let amountsOut: InputAmount[];
-            beforeAll(() => {
-                amountsOut = poolState.tokens.map((t) => ({
-                    rawAmount: parseUnits('0.01', t.decimals),
-                    decimals: t.decimals,
-                    address: t.address,
-                }));
-                input = {
-                    chainId,
-                    rpcUrl,
-                    kind: RemoveLiquidityKind.Unbalanced,
-                };
-            });
-            test('must throw remove liquidity kind not supported error', async () => {
-                const removeLiquidityInput = {
-                    ...input,
-                    amountsOut: amountsOut.slice(0, 1),
-                };
-                await expect(() =>
-                    doRemoveLiquidity({ ...txInput, removeLiquidityInput }),
-                ).rejects.toThrowError(
-                    protocolVersionError(
-                        'Remove Liquidity Unbalanced',
-                        poolState.protocolVersion,
-                    ),
-                );
-            });
         });
 
         describe('single token exact out', () => {
@@ -477,6 +442,14 @@ class MockApi {
 /******************************************************************************/
 
 /*********************** Helper functions for this test ***********************/
+const AUTHORIZER_SEPOLIA =
+    '0xEdFdDa22252399BDDAeE8d6D8e93c32cA3c31eeE' as const;
+const ADMIN_OF_AUTHORIZER =
+    '0x9098b50ee2d9E4c3C69928A691DA3b192b4C9673' as const;
+const authorizerAbi = parseAbi([
+    'function grantRole(bytes32 role, address account)',
+]);
+
 async function putPoolIntoRecoveryMode(
     client: PublicWalletClient & TestActions,
     poolState: PoolState,
@@ -492,8 +465,8 @@ async function putPoolIntoRecoveryMode(
 
     // grant the testAddress the right to enable Recovery mode for pools
     const { request: grantRoleRequest } = await client.simulateContract({
-        address: AUTHORIZER[chainId],
-        abi: authorizerAbi_V2,
+        address: AUTHORIZER_SEPOLIA,
+        abi: authorizerAbi,
         functionName: 'grantRole',
         args: [actionId, authorizedAddress],
         account: ADMIN_OF_AUTHORIZER,
@@ -502,7 +475,7 @@ async function putPoolIntoRecoveryMode(
     // the grantRole transaction must be sent by the "grantRole" admin, whose PK we do not have
     await client.impersonateAccount({ address: ADMIN_OF_AUTHORIZER });
 
-    // Do transaction to grand the testAccount the right to put pools into recovery mode
+    // Do transaction to grant the testAccount the right to put pools into recovery mode
     await client.writeContract(grantRoleRequest);
 
     await client.stopImpersonatingAccount({ address: ADMIN_OF_AUTHORIZER });
@@ -511,7 +484,7 @@ async function putPoolIntoRecoveryMode(
     const { request: enableRecoveryModeRequest } =
         await client.simulateContract({
             address: AddressProvider.Vault(chainId),
-            abi: [...authorizerAbi_V2, ...vaultAdminAbi_V3],
+            abi: [...authorizerAbi, ...vaultAdminAbi_V3],
             functionName: 'enableRecoveryMode',
             args: [poolState.address],
             account: authorizedAddress,

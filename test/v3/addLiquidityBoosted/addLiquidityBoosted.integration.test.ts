@@ -26,7 +26,6 @@ import {
     PublicWalletClient,
     AddLiquidityBoostedBuildCallInput,
     AddLiquidityBoostedInput,
-    balancerV3Contracts,
     AddLiquidityBoostedUnbalancedInput,
     AddLiquidityBoostedProportionalInput,
     TokenAmount,

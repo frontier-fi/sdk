@@ -1,15 +1,9 @@
 import { Account, Address, Hex, parseAbi } from 'viem';
 
-import {
-    BALANCER_COMPOSITE_LIQUIDITY_ROUTER_NESTED,
-    ChainId,
-    MAX_UINT256,
-    PublicWalletClient,
-} from '@/utils';
+import { MAX_UINT256, PublicWalletClient } from '@/utils';
 import { getNonce } from './helper';
 import { RemoveLiquidityBaseBuildCallInput } from '../removeLiquidity/types';
 import { getAmountsCall } from '../removeLiquidity/helper';
-import { TokenAmount } from '../tokenAmount';
 import { AddressProvider } from '@/entities/inputValidator/utils/addressProvider';
 
 type PermitApproval = {
@@ -59,35 +53,6 @@ export class PermitHelper {
         return { batch: [permitApproval], signatures: [permitSignature] };
     };
 
-    static signRemoveLiquidityNestedApproval = async (input: {
-        bptAmountIn: TokenAmount;
-        chainId: ChainId;
-        client: PublicWalletClient;
-        owner: Hex | Account;
-        nonce?: bigint;
-        deadline?: bigint;
-    }): Promise<Permit> => {
-        const _owner =
-            typeof input.owner === 'string' ? input.owner : input.owner.address;
-        const nonce =
-            input.nonce ??
-            (await getNonce(
-                input.client,
-                input.bptAmountIn.token.address,
-                _owner,
-            ));
-        const { permitApproval, permitSignature } = await signPermit(
-            input.client,
-            input.bptAmountIn.token.address,
-            input.owner,
-            BALANCER_COMPOSITE_LIQUIDITY_ROUTER_NESTED[input.chainId],
-            nonce,
-            input.bptAmountIn.amount, // maxBptIn
-            input.deadline,
-        );
-        return { batch: [permitApproval], signatures: [permitSignature] };
-    };
-
     static signRemoveLiquidityBoostedApproval = async (
         input: RemoveLiquidityBaseBuildCallInput & {
             client: PublicWalletClient;
@@ -115,11 +80,6 @@ export class PermitHelper {
     };
 }
 
-/**
- * Signs a permit for a given ERC-2612 ERC20 token using the specified parameters.
- *
- * @param { Client & WalletActions & PublicActions } client - Wallet client to invoke for signing the permit message
- */
 const signPermit = async (
     client: PublicWalletClient,
     token: Address,

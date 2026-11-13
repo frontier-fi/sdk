@@ -1,8 +1,5 @@
 /**
- * Example showing how to calculate price impact when adding liquidity with unbalanced inputs.
- *
- * Note: this example is highlighting one use case. You'll find other price impact
- * calculations within each example, such as add/remove liquidity nested, etc..
+ * Example showing how to calculate price impact when adding liquidity with unbalanced inputs to a boosted pool.
  *
  * Run with:
  * pnpm example ./examples/priceImpact/addLiquidityBoosted.ts
@@ -13,7 +10,7 @@ config();
 import { Address, parseUnits } from 'viem';
 import {
     AddLiquidityKind,
-    BalancerApi,
+    FrontierApi,
     ChainId,
     PriceImpact,
     API_ENDPOINT,
@@ -22,30 +19,27 @@ import {
 import { ANVIL_NETWORKS, startFork } from 'test/anvil/anvil-global-setup';
 
 const addLiquidityPriceImpact = async () => {
-    // User defined
-    const { rpcUrl } = await startFork(ANVIL_NETWORKS.SONIC);
-    const chainId = ChainId.SONIC;
-    const poolId = '0x43026d483f42fb35efe03c20b251142d022783f2'; // BeefyUSDC.e / scUSD
+    const { rpcUrl } = await startFork(ANVIL_NETWORKS.SEPOLIA);
+    const chainId = ChainId.SEPOLIA;
+    const poolId = '0x59fa488dda749cdd41772bb068bb23ee955a6d7a';
 
     const amountsIn = [
         {
-            rawAmount: parseUnits('0.1', 6),
+            rawAmount: parseUnits('1', 6),
             decimals: 6,
-            address: '0x29219dd400f2Bf60E5a23d13Be72B486D4038894' as Address, // USDC.e
+            address: '0x94a9D9AC8a22534E3FaCa9F4e7F2E2cf85d5E4C8' as Address,
         },
         {
-            rawAmount: parseUnits('0.1', 6),
+            rawAmount: parseUnits('1', 6),
             decimals: 6,
-            address: '0xd3dce716f3ef535c5ff8d041c1a41c3bd89b97ae' as Address, // sUSD
+            address: '0xaA8E23Fb1079EA71e0a56F48a2aA51851D8433D0' as Address,
         },
     ];
 
-    // API is used to fetch relevant pool data
-    const balancerApi = new BalancerApi(API_ENDPOINT, chainId);
+    const frontierApi = new FrontierApi(API_ENDPOINT, chainId);
     const poolStateWithUnderlyings =
-        await balancerApi.boostedPools.fetchPoolStateWithUnderlyings(poolId);
+        await frontierApi.boostedPools.fetchPoolStateWithUnderlyings(poolId);
 
-    // Construct the AddLiquidityInput, in this case an AddLiquidityUnbalanced
     const addLiquidityInput: AddLiquidityBoostedUnbalancedInput = {
         amountsIn,
         chainId,
@@ -53,7 +47,6 @@ const addLiquidityPriceImpact = async () => {
         kind: AddLiquidityKind.Unbalanced,
     };
 
-    // Calculate Price Impact
     const priceImpact = await PriceImpact.addLiquidityUnbalancedBoosted(
         addLiquidityInput,
         poolStateWithUnderlyings,

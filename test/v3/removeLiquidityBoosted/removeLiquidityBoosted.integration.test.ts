@@ -28,7 +28,6 @@ import {
     RemoveLiquidityBoostedV3,
     RemoveLiquidityBoostedProportionalInput,
     PermitHelper,
-    balancerV3Contracts,
 } from 'src';
 import {
     doAddLiquidityBoosted,
