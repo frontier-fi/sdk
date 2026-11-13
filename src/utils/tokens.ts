@@ -1,6 +1,5 @@
-import { Address, Client, Hex, PublicClient, getContract } from 'viem';
-import { vaultAbi_V2, vaultExtensionAbi_V3 } from '../abi';
-import { balancerV2Contracts } from './balancerV2Contracts';
+import { Address, Client, PublicClient, getContract } from 'viem';
+import { vaultExtensionAbi_V3 } from '../abi';
 import { AddressProvider } from '@/entities/inputValidator/utils/addressProvider';
 
 export async function getTokenDecimals(
@@ -36,29 +35,6 @@ export async function getTokenDecimals(
         console.warn(e);
         throw new Error(
             `Error: Unable to get Token Decimals from token: ${tokenAddress}`,
-        );
-    }
-}
-
-export async function getPoolTokensV2(
-    poolId: Hex,
-    client: PublicClient,
-): Promise<[Address[], bigint[], bigint]> {
-    try {
-        const chainId = await client.getChainId();
-        const vaultV2 = getContract({
-            abi: vaultAbi_V2,
-            address: balancerV2Contracts.Vault[chainId],
-            client,
-        });
-        const poolTokensFromVault = (await vaultV2.read.getPoolTokens([
-            poolId,
-        ])) as [Address[], bigint[], bigint];
-        return poolTokensFromVault;
-    } catch (e) {
-        console.warn(e);
-        throw new Error(
-            `Error: Unable to get pool tokens using this pool id: ${poolId}`,
         );
     }
 }

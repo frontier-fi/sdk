@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { BalancerApi } from '@/data/providers/balancer-api';
+import { FrontierApi } from '@/data/providers/frontier-api';
 import { API_ENDPOINT, ChainId } from '@/utils';
 
-const CHAIN_ID = ChainId.MAINNET;
-const BOOSTED_POOL_ID = '0x57c23c58b1d8c3292c15becf07c62c5c52457a42';
+const CHAIN_ID = ChainId.SEPOLIA;
+const BOOSTED_POOL_ID = '0x8e06ef1a2e854feaee0a83510acd05f8e443fa4f';
 
 describe('contract: boosted-pool-state (live API)', () => {
-    const api = new BalancerApi(API_ENDPOINT, CHAIN_ID, {
-        clientName: 'b-sdk-e2e-tests',
+    const api = new FrontierApi(API_ENDPOINT, CHAIN_ID, {
+        clientName: 'frontier-sdk-e2e-tests',
         clientVersion: '0.0.0',
     });
 
@@ -17,7 +17,6 @@ describe('contract: boosted-pool-state (live API)', () => {
                 BOOSTED_POOL_ID,
             );
         expect(pool.tokens.length).toBeGreaterThan(0);
-        // at least one token should have an underlying token
         expect(pool.tokens.some((t) => t.underlyingToken !== null)).toBe(true);
     });
 });

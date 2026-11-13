@@ -23,7 +23,7 @@
         "baseUrl": ".",
         "paths": {
             "@/*": ["./src/*"],
-            "@balancer/sdk": ["src/index.ts"]
+            "@frontier-fi/sdk": ["src/index.ts"]
         }
     }
 }

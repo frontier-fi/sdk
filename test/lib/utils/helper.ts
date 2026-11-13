@@ -22,12 +22,9 @@ import {
 import { permit2Abi } from '@/abi';
 import { AddressProvider } from '@/entities/inputValidator/utils/addressProvider';
 import {
-    // balancerV3Contracts,
-    BALANCER_COMPOSITE_LIQUIDITY_ROUTER_NESTED,
     MAX_UINT256,
     PERMIT2,
     PublicWalletClient,
-    VAULT_V2,
     ZERO_ADDRESS,
 } from '@/utils';
 
@@ -78,90 +75,60 @@ export const approveToken = async (
     client: PublicWalletClient,
     accountAddress: Address,
     tokenAddress: Address,
-    protocolVersion: 2 | 3,
+    _protocolVersion: 3 = 3,
     approveOnPermit2 = true,
     amount?: bigint,
     deadline?: bigint,
 ): Promise<boolean> => {
     const chainId = await client.getChainId();
 
-    let approved = false;
-    if (protocolVersion === 2) {
-        // Approve VAULT_V2 V2 to spend account tokens
-        approved = await approveSpenderOnToken(
+    const permit2ApprovedOnToken = await approveSpenderOnToken(
+        client,
+        accountAddress,
+        tokenAddress,
+        PERMIT2[chainId],
+        amount,
+    );
+    let approved = permit2ApprovedOnToken;
+    if (approveOnPermit2) {
+        const routerApprovedOnPermit2 = await approveSpenderOnPermit2(
             client,
             accountAddress,
             tokenAddress,
-            VAULT_V2[chainId],
+            AddressProvider.Router(chainId),
             amount,
+            deadline,
         );
-    } else {
-        // Approve Permit2 to spend account tokens
-        const permit2ApprovedOnToken = await approveSpenderOnToken(
+        const batchRouterApprovedOnPermit2 = await approveSpenderOnPermit2(
             client,
             accountAddress,
             tokenAddress,
-            PERMIT2[chainId],
+            AddressProvider.BatchRouter(chainId),
             amount,
+            deadline,
         );
-        approved = permit2ApprovedOnToken;
-        if (approveOnPermit2) {
-            // Approve Router to spend account tokens using Permit2
-            const routerApprovedOnPermit2 = await approveSpenderOnPermit2(
-                client,
-                accountAddress,
-                tokenAddress,
-                AddressProvider.Router(chainId),
-                amount,
-                deadline,
-            );
-            // Approve BatchRouter to spend account tokens using Permit2
-            const batchRouterApprovedOnPermit2 = await approveSpenderOnPermit2(
-                client,
-                accountAddress,
-                tokenAddress,
-                AddressProvider.BatchRouter(chainId),
-                amount,
-                deadline,
-            );
-            // Approve CompositeRouter to spend account tokens using Permit2
-            const compositeRouterApprovedOnPermit2 =
-                await approveSpenderOnPermit2(
-                    client,
-                    accountAddress,
-                    tokenAddress,
-                    BALANCER_COMPOSITE_LIQUIDITY_ROUTER_NESTED[chainId] ??
-                        zeroAddress,
-                    amount,
-                    deadline,
-                );
-            // Approve BufferRouter to spend account tokens using Permit2
-            const bufferRouterApprovedOnPermit2 = await approveSpenderOnPermit2(
-                client,
-                accountAddress,
-                tokenAddress,
-                AddressProvider.BufferRouter(chainId),
-                amount,
-                deadline,
-            );
-            // Approve UnbalancedAddViaSwapRouter to spend account tokens using Permit2
-            const unbalancedAddViaSwapRouterApprovedOnPermit2 =
-                await approveSpenderOnPermit2(
-                    client,
-                    accountAddress,
-                    tokenAddress,
-                    AddressProvider.UnbalancedAddViaSwapRouter(chainId),
-                    amount,
-                    deadline,
-                );
-            approved =
-                approved &&
-                routerApprovedOnPermit2 &&
-                batchRouterApprovedOnPermit2 &&
-                compositeRouterApprovedOnPermit2 &&
-                bufferRouterApprovedOnPermit2 &&
-                unbalancedAddViaSwapRouterApprovedOnPermit2;
-        }
+        const compositeRouterApprovedOnPermit2 = await approveSpenderOnPermit2(
+            client,
+            accountAddress,
+            tokenAddress,
+            AddressProvider.CompositeLiquidityRouter(chainId),
+            amount,
+            deadline,
+        );
+        const bufferRouterApprovedOnPermit2 = await approveSpenderOnPermit2(
+            client,
+            accountAddress,
+            tokenAddress,
+            AddressProvider.BufferRouter(chainId),
+            amount,
+            deadline,
+        );
+        approved =
+            approved &&
+            routerApprovedOnPermit2 &&
+            batchRouterApprovedOnPermit2 &&
+            compositeRouterApprovedOnPermit2 &&
+            bufferRouterApprovedOnPermit2;
     }
     return approved;
 };
@@ -170,7 +137,7 @@ export const approveTokens = async (
     client: PublicWalletClient,
     accountAddress: Address,
     tokens: Address[],
-    protocolVersion: 2 | 3,
+    protocolVersion: 3 = 3,
     approveOnPermit2 = true,
 ): Promise<boolean> => {
     const approvals: boolean[] = [];
@@ -340,30 +307,6 @@ export async function sendTransactionGetBalances(
         client,
         clientAddress,
     );
-
-    // TODO - Leave this in as useful as basis for manual debug
-    // await client.simulateContract({
-    //     address:
-    //         BALANCER_COMPOSITE_LIQUIDITY_ROUTER_NESTED[client.chain?.id as number],
-    //     abi: [
-    //         ...balancerCompositeLiquidityRouterNestedAbi,
-    //         ...VAULT_V2V3Abi,
-    //         ...VAULT_V2ExtensionAbi_V3,
-    //         ...permit2Abi,
-    //     ],
-    //     functionName: 'addLiquidityUnbalancedNestedPool',
-    //     args: [
-    //         '0x0270daf4ee12ccb1abc8aa365054eecb1b7f4f6b',
-    //         [
-    //             '0x94a9d9ac8a22534e3faca9f4e7f2e2cf85d5e4c8',
-    //             '0xaa8e23fb1079ea71e0a56f48a2aa51851d8433d0',
-    //             '0x7b79995e5f793a07bc00c21412e50ecae098e7f9',
-    //         ],
-    //         [0n, 19000000n, 1000000000000000n],
-    //         0n, // 209352153002437020n,
-    //         '0x',
-    //     ],
-    // });
 
     // Send transaction to local fork
     const hash = await client.sendTransaction({
@@ -551,7 +494,7 @@ export async function findTokenBalanceSlot(
  * @param slots Slot that stores token balance in memory - use npm package `slot20` to identify which slot to provide
  * @param balances Balances in EVM amounts
  * @param isVyperMapping Whether the storage uses Vyper or Solidity mapping
- * @param protocolVersion Balancer VAULT_V2 version
+ * @param protocolVersion Frontier Vault protocol version
  * @param approveOnPermit2 Whether to approve spender on Permit2
  */
 export const forkSetup = async (
@@ -561,7 +504,7 @@ export const forkSetup = async (
     slots: number[] | undefined,
     balances: bigint[],
     isVyperMapping: boolean[] = Array(tokens.length).fill(false),
-    protocolVersion: 2 | 3 = 2,
+    protocolVersion: 3 = 3,
     approveOnPermit2 = true,
 ): Promise<void> => {
     await client.impersonateAccount({ address: accountAddress });
@@ -592,49 +535,6 @@ export const forkSetup = async (
     );
 };
 
-/**
- * Setup local fork with approved token balance for a given account address
- *
- * @param client Client that will perform transactions
- * @param accountAddress Account address that will have token balance set and approved
- * @param tokens Token addresses which balance will be set and approved
- * @param slots Slot that stores token balance in memory - use npm package `slot20` to identify which slot to provide
- * @param balances Balances in EVM amounts
- * @param pool Pool address that needs to be approved as token spender
- * @param isVyperMapping Whether the storage uses Vyper or Solidity mapping
- */
-export const forkSetupCowAmm = async (
-    client: PublicWalletClient & TestActions,
-    accountAddress: Address,
-    tokens: Address[],
-    slots: number[] | undefined,
-    balances: bigint[],
-    pool: Address,
-    isVyperMapping: boolean[] = Array(tokens.length).fill(false),
-): Promise<void> => {
-    await client.impersonateAccount({ address: accountAddress });
-
-    const _slots = await getSlots(
-        slots,
-        tokens,
-        client,
-        accountAddress,
-        isVyperMapping,
-    );
-
-    await setTokenBalances(
-        client,
-        accountAddress,
-        tokens,
-        _slots,
-        balances,
-        isVyperMapping,
-    );
-
-    for (let i = 0; i < tokens.length; i++) {
-        await approveSpenderOnToken(client, accountAddress, tokens[i], pool);
-    }
-};
 export const getSlots = async (
     slots: number[] | undefined,
     tokens: Address[],

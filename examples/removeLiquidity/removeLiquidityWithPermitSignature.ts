@@ -15,7 +15,7 @@ import {
     walletActions,
 } from 'viem';
 import {
-    BalancerApi,
+    FrontierApi,
     ChainId,
     CHAINS,
     InputAmount,
@@ -116,8 +116,8 @@ const removeLiquidityWithPermitSignature = async ({
     slippage,
 }) => {
     // API is used to fetch relevant pool data
-    const balancerApi = new BalancerApi(TEST_API_ENDPOINT, chainId);
-    const poolState: PoolState = await balancerApi.pools.fetchPoolState(poolId);
+    const frontierApi = new FrontierApi(TEST_API_ENDPOINT, chainId);
+    const poolState: PoolState = await frontierApi.pools.fetchPoolState(poolId);
 
     // Construct the RemoveLiquidityInput, in this case a RemoveLiquiditySingleTokenExactIn
     const removeLiquidityInput: RemoveLiquidityInput = {

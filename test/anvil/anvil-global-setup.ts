@@ -12,135 +12,19 @@ export type NetworkSetup = {
     forkBlockNumber: bigint;
 };
 
-type NetworksWithFork = Extract<
-    keyof typeof ChainId,
-    | 'MAINNET'
-    | 'POLYGON'
-    | 'FANTOM'
-    | 'SEPOLIA'
-    | 'OPTIMISM'
-    | 'MODE'
-    | 'FRAXTAL'
-    | 'AVALANCHE'
-    | 'ARBITRUM_ONE'
-    | 'GNOSIS_CHAIN'
-    | 'SONIC'
-    | 'HYPEREVM'
-    | 'PLASMA'
-    | 'X_LAYER'
-    | 'MONAD'
->;
+type NetworksWithFork = Extract<keyof typeof ChainId, 'SEPOLIA'>;
 
 const ANVIL_PORTS: Record<NetworksWithFork, number> = {
-    //Ports separated by 100 to avoid port collision when running tests in parallel
-    MAINNET: 8645,
-    POLYGON: 8745,
-    FANTOM: 8845,
+    // Ports separated by 100 to avoid port collision when running tests in parallel
     SEPOLIA: 8945,
-    OPTIMISM: 9045,
-    MODE: 9145,
-    FRAXTAL: 9245,
-    AVALANCHE: 9345,
-    ARBITRUM_ONE: 9445,
-    GNOSIS_CHAIN: 9545,
-    SONIC: 9645,
-    HYPEREVM: 9745,
-    PLASMA: 9845,
-    X_LAYER: 9945,
-    MONAD: 10045,
 };
 
 export const ANVIL_NETWORKS: Record<NetworksWithFork, NetworkSetup> = {
-    MAINNET: {
-        rpcEnv: 'ETHEREUM_RPC_URL',
-        fallBackRpc: 'https://mainnet.gateway.tenderly.co',
-        port: ANVIL_PORTS.MAINNET,
-        forkBlockNumber: 21373640n,
-    },
-    POLYGON: {
-        rpcEnv: 'POLYGON_RPC_URL',
-        fallBackRpc: 'https://polygon.gateway.tenderly.co',
-        port: ANVIL_PORTS.POLYGON,
-        forkBlockNumber: 44215395n,
-    },
-    FANTOM: {
-        rpcEnv: 'FANTOM_RPC_URL',
-        // Public Fantom RPCs are usually unreliable
-        fallBackRpc: undefined,
-        port: ANVIL_PORTS.FANTOM,
-        forkBlockNumber: 65313450n,
-    },
     SEPOLIA: {
         rpcEnv: 'SEPOLIA_RPC_URL',
         fallBackRpc: 'https://sepolia.gateway.tenderly.co',
         port: ANVIL_PORTS.SEPOLIA,
-        forkBlockNumber: 10845565n,
-    },
-    OPTIMISM: {
-        rpcEnv: 'OPTIMISM_RPC_URL',
-        fallBackRpc: 'https://optimism.gateway.tenderly.co/',
-        port: ANVIL_PORTS.OPTIMISM,
-        forkBlockNumber: 117374265n,
-    },
-    MODE: {
-        rpcEnv: 'MODE_RPC_URL',
-        fallBackRpc: 'https://mode.gateway.tenderly.co/',
-        port: ANVIL_PORTS.MODE,
-        forkBlockNumber: 10484897n,
-    },
-    FRAXTAL: {
-        rpcEnv: 'FRAXTAL_RPC_URL',
-        fallBackRpc: 'https://fraxtal.gateway.tenderly.co/',
-        port: ANVIL_PORTS.FRAXTAL,
-        forkBlockNumber: 7164945n,
-    },
-    AVALANCHE: {
-        rpcEnv: 'AVALANCHE_RPC_URL',
-        fallBackRpc: 'https://avalanche.gateway.tenderly.co/',
-        port: ANVIL_PORTS.AVALANCHE,
-        forkBlockNumber: 48164407n,
-    },
-    ARBITRUM_ONE: {
-        rpcEnv: 'ARBITRUM_ONE_RPC_URL',
-        fallBackRpc: 'https://arbitrum.gateway.tenderly.co/',
-        port: ANVIL_PORTS.ARBITRUM_ONE,
-        forkBlockNumber: 234936318n,
-    },
-    GNOSIS_CHAIN: {
-        rpcEnv: 'GNOSIS_CHAIN_RPC_URL',
-        fallBackRpc: 'https://rpc.ankr.com/gnosis',
-        port: ANVIL_PORTS.GNOSIS_CHAIN,
-        forkBlockNumber: 44377261n,
-    },
-    SONIC: {
-        rpcEnv: 'SONIC_RPC_URL',
-        fallBackRpc: 'https://sonic.drpc.org',
-        port: ANVIL_PORTS.SONIC,
-        forkBlockNumber: 7728765n,
-    },
-    HYPEREVM: {
-        rpcEnv: 'HYPEREVM_RPC_URL',
-        fallBackRpc: 'https://rpc.hyperliquid.xyz/evm',
-        port: ANVIL_PORTS.HYPEREVM,
-        forkBlockNumber: 6892528n,
-    },
-    PLASMA: {
-        rpcEnv: 'PLASMA_RPC_URL',
-        fallBackRpc: 'https://rpc.plasma.to/',
-        port: ANVIL_PORTS.PLASMA,
-        forkBlockNumber: 1274881n,
-    },
-    X_LAYER: {
-        rpcEnv: 'X_LAYER_RPC_URL',
-        fallBackRpc: 'https://rpc.ankr.com/xlayer',
-        port: ANVIL_PORTS.X_LAYER,
-        forkBlockNumber: 43138155n,
-    },
-    MONAD: {
-        rpcEnv: 'MONAD_RPC_URL',
-        fallBackRpc: 'https://rpc.monad.xyz',
-        port: ANVIL_PORTS.MONAD,
-        forkBlockNumber: 52794217n,
+        forkBlockNumber: 12127500n,
     },
 };
 

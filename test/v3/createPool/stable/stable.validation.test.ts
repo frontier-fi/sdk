@@ -9,7 +9,7 @@ import {
     CreatePoolV3StableInput,
 } from 'src';
 import { TOKENS } from 'test/lib/utils/addresses';
-import { STABLE_POOL_CONSTRAINTS } from 'src/utils/constantsV3';
+import { STABLE_POOL_CONSTRAINTS } from '@/utils';
 
 const { MAX_TOKENS, MIN_AMP, MAX_AMP } = STABLE_POOL_CONSTRAINTS;
 

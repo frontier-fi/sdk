@@ -2,7 +2,6 @@ import {
     ChainId,
     NATIVE_ASSETS,
     PoolState,
-    RemoveLiquidityBaseBuildCallInput,
     RemoveLiquidityBuildCallOutput,
     RemoveLiquidityQueryOutput,
     RemoveLiquidityRecoveryInput,
@@ -10,15 +9,10 @@ import {
     Slippage,
     Token,
     TokenAmount,
-    VAULT_V2,
 } from 'src';
 import { getTokensForBalanceCheck } from './getTokensForBalanceCheck';
 import { sendTransactionGetBalances } from './helper';
 import { RemoveLiquidityRecoveryTxInput } from './types';
-import {
-    RemoveLiquidityV2BaseBuildCallInput,
-    RemoveLiquidityV2BuildCallInput,
-} from '@/entities/removeLiquidity/removeLiquidityV2/types';
 import {
     RemoveLiquidityOutput,
     assertRemoveLiquidityBuildCallOutput,
@@ -33,9 +27,7 @@ export const sdkRemoveLiquidityRecovery = async ({
     removeLiquidityRecoveryInput,
     poolState,
     slippage,
-    testAddress,
     wethIsEth,
-    toInternalBalance,
 }: Omit<RemoveLiquidityRecoveryTxInput, 'client'>): Promise<{
     removeLiquidityBuildCallOutput: RemoveLiquidityBuildCallOutput;
     removeLiquidityQueryOutput: RemoveLiquidityQueryOutput;
@@ -45,30 +37,15 @@ export const sdkRemoveLiquidityRecovery = async ({
         poolState,
     );
 
-    let removeLiquidityBuildInput: RemoveLiquidityBaseBuildCallInput = {
+    const removeLiquidityBuildInput: RemoveLiquidityV3BuildCallInput = {
         ...removeLiquidityQueryOutput,
         slippage,
         wethIsEth: !!wethIsEth,
+        userData: removeLiquidityRecoveryInput.userData ?? '0x',
     };
-    if (poolState.protocolVersion === 2) {
-        (removeLiquidityBuildInput as RemoveLiquidityV2BaseBuildCallInput) = {
-            ...removeLiquidityBuildInput,
-            sender: testAddress,
-            recipient: testAddress,
-            toInternalBalance: !!toInternalBalance,
-        };
-    }
-    if (poolState.protocolVersion === 3) {
-        (removeLiquidityBuildInput as RemoveLiquidityV3BuildCallInput) = {
-            ...removeLiquidityBuildInput,
-            userData: removeLiquidityRecoveryInput.userData ?? '0x',
-        };
-    }
 
     const removeLiquidityBuildCallOutput = removeLiquidity.buildCall(
-        removeLiquidityBuildInput as
-            | RemoveLiquidityV2BuildCallInput
-            | RemoveLiquidityV3BuildCallInput,
+        removeLiquidityBuildInput,
     );
 
     return {
@@ -77,16 +54,6 @@ export const sdkRemoveLiquidityRecovery = async ({
     };
 };
 
-/**
- * Create and submit remove liquidity transaction.
- * @param txInput
- *     @param client: Client & PublicActions & WalletActions - The RPC client
- *     @param removeLiquidity: RemoveLiquidity - The remove liquidity class, used to query outputs and build transaction call
- *     @param removeLiquidityInput: RemoveLiquidityInput - The parameters of the transaction, example: bptIn, amountsOut, etc.
- *     @param slippage: Slippage - The slippage tolerance for the transaction
- *     @param poolState: PoolState - The state of the pool
- *     @param testAddress: Address - The address to send the transaction from
- *  */
 export async function doRemoveLiquidityRecovery(
     txInput: RemoveLiquidityRecoveryTxInput,
 ) {
@@ -110,10 +77,8 @@ export async function doRemoveLiquidityRecovery(
             wethIsEth,
         });
 
-    // get tokens for balance change - pool tokens, BPT, native
     const tokens = getTokensForBalanceCheck(poolState);
 
-    // send transaction and calculate balance changes
     const txOutput = await sendTransactionGetBalances(
         tokens,
         client,
@@ -136,7 +101,7 @@ export function assertRemoveLiquidityRecovery(
     removeLiquidityOutput: RemoveLiquidityOutput,
     slippage: Slippage,
     chainId: ChainId,
-    protocolVersion: 2 | 3 = 2,
+    protocolVersion: 3 = 3,
     wethIsEth?: boolean,
 ) {
     const {
@@ -151,38 +116,30 @@ export function assertRemoveLiquidityRecovery(
         18,
     );
 
-    let expectedQueryOutput:
-        | Omit<RemoveLiquidityQueryOutput, 'amountsOut' | 'bptIndex'>
-        | (Omit<RemoveLiquidityQueryOutput, 'amountsOut' | 'bptIndex'> & {
-              userData: Hex;
-          }) = {
-        // Query should use same bpt out as user sets
+    const expectedQueryOutput: Omit<
+        RemoveLiquidityQueryOutput,
+        'amountsOut'
+    > & {
+        userData: Hex;
+    } = {
         bptIn: TokenAmount.fromRawAmount(
             bptToken,
             removeLiquidityRecoveryInput.bptIn.rawAmount,
         ),
-        // Only expect tokenInIndex for AddLiquiditySingleToken
         tokenOutIndex: undefined,
-        // Should match inputs
         poolId: poolState.id,
         poolType: poolState.type,
         removeLiquidityKind: removeLiquidityRecoveryInput.kind,
         protocolVersion: poolState.protocolVersion,
         chainId: removeLiquidityRecoveryInput.chainId,
-        to:
-            protocolVersion === 2
-                ? VAULT_V2[chainId]
-                : AddressProvider.Router(chainId),
+        to: AddressProvider.Router(chainId),
+        userData: '0x',
     };
-
-    if (protocolVersion === 3)
-        expectedQueryOutput = { ...expectedQueryOutput, userData: '0x' };
 
     const queryCheck = getCheck(removeLiquidityQueryOutput, true);
 
     expect(queryCheck).to.deep.eq(expectedQueryOutput);
 
-    // Expect all assets in to have an amount > 0 apart from BPT if it exists
     removeLiquidityQueryOutput.amountsOut.forEach((a) => {
         if (a.token.address === poolState.address) expect(a.amount).toEqual(0n);
         else expect(a.amount > 0n).to.be.true;

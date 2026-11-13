@@ -5,13 +5,7 @@ import {
     Permit2Batch,
     PermitDetails,
 } from './allowanceTransfer';
-import {
-    BALANCER_COMPOSITE_LIQUIDITY_ROUTER_NESTED,
-    ChainId,
-    PERMIT2,
-    PublicWalletClient,
-    inputValidationError,
-} from '@/utils';
+import { PERMIT2, PublicWalletClient, inputValidationError } from '@/utils';
 import {
     MaxAllowanceExpiration,
     MaxAllowanceTransferAmount,
@@ -31,7 +25,6 @@ import { getAmountsCall } from '../addLiquidity/helpers';
 import { AddLiquidityBufferBuildCallInput } from '../addLiquidityBuffer/types';
 import { InitBufferBuildCallInput } from '../initBuffer/types';
 import { AddressProvider } from '@/entities/inputValidator/utils/addressProvider';
-import { AddLiquidityUnbalancedViaSwapBuildCallInput } from '../addLiquidityUnbalancedViaSwap';
 
 export * from './allowanceTransfer';
 export * from './constants';
@@ -105,39 +98,6 @@ export class Permit2Helper {
         return signPermit2(input.client, input.owner, spender, details);
     }
 
-    static async signAddLiquidityNestedApproval(input: {
-        amountsIn: TokenAmount[];
-        chainId: ChainId;
-        client: PublicWalletClient;
-        owner: Address | Account;
-        nonces?: number[];
-        expirations?: number[];
-    }): Promise<Permit2> {
-        validateNoncesAndExpirations(
-            input.nonces,
-            input.expirations,
-            input.amountsIn.length,
-        );
-        const maxAmountsIn = input.amountsIn.map((a) => a.amount);
-        const spender =
-            BALANCER_COMPOSITE_LIQUIDITY_ROUTER_NESTED[input.chainId];
-        const details: PermitDetails[] = [];
-        for (let i = 0; i < input.amountsIn.length; i++) {
-            details.push(
-                await getDetails(
-                    input.client,
-                    input.amountsIn[i].token.address,
-                    input.owner,
-                    spender,
-                    maxAmountsIn[i],
-                    input.expirations ? input.expirations[i] : undefined,
-                    input.nonces ? input.nonces[i] : undefined,
-                ),
-            );
-        }
-        return signPermit2(input.client, input.owner, spender, details);
-    }
-
     static async signAddLiquidityBoostedApproval(
         input: AddLiquidityBaseBuildCallInput & {
             client: PublicWalletClient;
@@ -201,35 +161,6 @@ export class Permit2Helper {
                 input.nonces ? input.nonces[1] : undefined,
             ),
         ];
-        return signPermit2(input.client, input.owner, spender, details);
-    }
-
-    static async signAddLiquidityUnbalancedViaSwapApproval(
-        input: AddLiquidityUnbalancedViaSwapBuildCallInput & {
-            client: PublicWalletClient;
-            owner: Address | Account;
-            nonce?: number;
-            expiration?: number;
-        },
-    ): Promise<Permit2> {
-        const spender = AddressProvider.UnbalancedAddViaSwapRouter(
-            input.chainId,
-        );
-        const maxAdjustableAmountIn = input.slippage.applyTo(
-            input.expectedAdjustableAmountIn.amount,
-        );
-        const details: PermitDetails[] = [];
-        details.push(
-            await getDetails(
-                input.client,
-                input.expectedAdjustableAmountIn.token.address,
-                input.owner,
-                spender,
-                maxAdjustableAmountIn,
-                input.expiration,
-                input.nonce,
-            ),
-        );
         return signPermit2(input.client, input.owner, spender, details);
     }
 
@@ -307,14 +238,7 @@ export class Permit2Helper {
         ];
 
         // sign permit2
-        const permit2 = await signPermit2(
-            input.client,
-            input.owner,
-            spender,
-            details,
-        );
-
-        return permit2;
+        return signPermit2(input.client, input.owner, spender, details);
     }
 }
 

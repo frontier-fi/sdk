@@ -18,7 +18,7 @@ import {
     walletActions,
 } from 'viem';
 import {
-    BalancerApi,
+    FrontierApi,
     ChainId,
     Slippage,
     TEST_API_ENDPOINT,
@@ -137,9 +137,9 @@ export const addLiquidityExample = async ({
     slippage: Slippage;
 }) => {
     // API is used to fetch relevant pool data
-    const balancerApi = new BalancerApi(TEST_API_ENDPOINT, chainId);
+    const frontierApi = new FrontierApi(TEST_API_ENDPOINT, chainId);
     const bufferState =
-        await balancerApi.buffers.fetchBufferState(wrappedTokenAddress);
+        await frontierApi.buffers.fetchBufferState(wrappedTokenAddress);
 
     // Construct the AddLiquidityBufferInput
     const addLiquidityBufferInput: AddLiquidityBufferInput = {

@@ -24,7 +24,7 @@ interface QueryCustomPath {
     tokenIn: TokenApi;
     tokenOut: TokenApi;
     swapKind: SwapKind;
-    protocolVersion: 2 | 3;
+    protocolVersion?: 3;
     inputAmountRaw: bigint;
     outputAmountRaw: bigint;
 }
@@ -36,7 +36,7 @@ export const queryCustomPath = async ({
     tokenIn,
     tokenOut,
     swapKind,
-    protocolVersion,
+    protocolVersion = 3,
     inputAmountRaw,
     outputAmountRaw,
 }: QueryCustomPath): Promise<{

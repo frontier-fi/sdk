@@ -18,9 +18,9 @@ const protocolVersion = 3;
 
 const chainId = ChainId.SEPOLIA;
 
-const poolId = POOLS[chainId].MOCK_USDC_DAI_POOL.id;
-const USDC = TOKENS[chainId].USDC;
-const DAI = TOKENS[chainId].DAI;
+const poolId = POOLS[chainId].MOCK_WETH_USDC_POOL.id;
+const USDC = TOKENS[chainId].USDC_AAVE;
+const WETH = TOKENS[chainId].WETH;
 
 // TODO: rewrite this as a unit test to avoid the need for updating hardcoded values
 describe('add liquidity test', () => {
@@ -52,16 +52,16 @@ describe('add liquidity test', () => {
                         address: USDC.address,
                         decimals: USDC.decimals,
                         index: 0,
-                        balance: '6859.248467',
+                        balance: '4319.473813',
                     },
                     {
-                        address: DAI.address,
-                        decimals: DAI.decimals,
+                        address: WETH.address,
+                        decimals: WETH.decimals,
                         index: 1,
-                        balance: '6327.231507455409830142',
+                        balance: '2.1424726',
                     },
                 ],
-                totalShares: '6582.79271994574606159',
+                totalShares: '96.199316398404878587',
             };
 
             expect(poolStateWithBalances).to.deep.eq(mockData);
@@ -79,8 +79,8 @@ class MockApi {
                 index: 0,
             },
             {
-                address: DAI.address,
-                decimals: DAI.decimals,
+                address: WETH.address,
+                decimals: WETH.decimals,
                 index: 1,
             },
         ];

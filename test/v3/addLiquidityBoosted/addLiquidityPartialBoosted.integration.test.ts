@@ -13,10 +13,10 @@ import {
 } from 'viem';
 import {
     Address,
-    // balancerV3Contracts,
     CHAINS,
     ChainId,
     PERMIT2,
+    PoolStateWithUnderlyings,
     PublicWalletClient,
     Slippage,
     Token,
@@ -37,15 +37,15 @@ import {
     setTokenBalances,
     TOKENS,
 } from 'test/lib/utils';
-import { partialBoostedPool_WETH_stataUSDT } from 'test/mockData/partialBoostedPool';
+import { createPartialBoostedPool } from 'test/mockData/partialBoostedPool';
 import { AddressProvider } from '@/entities/inputValidator/utils/addressProvider';
 
 const chainId = ChainId.SEPOLIA;
-const USDT = TOKENS[chainId].USDT_AAVE;
+const AAVE = TOKENS[chainId].AAVE;
 const WETH = TOKENS[chainId].WETH;
 
 // These are the underlying tokens
-const usdtToken = new Token(chainId, USDT.address, USDT.decimals);
+const aaveToken = new Token(chainId, AAVE.address, AAVE.decimals);
 const wethToken = new Token(chainId, WETH.address, WETH.decimals);
 
 describe('V3 add liquidity partial boosted', () => {
@@ -53,9 +53,10 @@ describe('V3 add liquidity partial boosted', () => {
     let client: PublicWalletClient & TestActions;
     let testAddress: Address;
     let snapshot: Hex;
+    let partialBoostedPool: PoolStateWithUnderlyings;
     const addLiquidityBoosted = new AddLiquidityBoostedV3();
     const amountsIn = [
-        TokenAmount.fromHumanAmount(usdtToken, '1'),
+        TokenAmount.fromHumanAmount(aaveToken, '0.2'),
         TokenAmount.fromHumanAmount(wethToken, '0.02'),
     ];
 
@@ -66,23 +67,29 @@ describe('V3 add liquidity partial boosted', () => {
         client = createTestClient({
             mode: 'anvil',
             chain: CHAINS[chainId],
-            transport: http(rpcUrl),
+            transport: http(rpcUrl, { timeout: 120_000 }),
         })
             .extend(publicActions)
             .extend(walletActions);
 
         testAddress = (await client.getAddresses())[0];
 
+        partialBoostedPool = await createPartialBoostedPool(
+            client,
+            rpcUrl,
+            testAddress,
+        );
+
         // fork setup
         await setTokenBalances(
             client,
             testAddress,
             amountsIn.map((t) => t.token.address),
-            [USDT.slot, WETH.slot] as number[],
+            [AAVE.slot, WETH.slot] as number[],
             amountsIn.map((t) => parseUnits('1000', t.token.decimals)),
         );
 
-        for (const token of partialBoostedPool_WETH_stataUSDT.tokens) {
+        for (const token of partialBoostedPool.tokens) {
             // Approve Permit2 to spend account tokens
             await approveSpenderOnToken(
                 client,
@@ -100,7 +107,7 @@ describe('V3 add liquidity partial boosted', () => {
         }
 
         snapshot = await client.snapshot();
-    });
+    }, 120_000);
 
     beforeEach(async () => {
         await client.revert({
@@ -142,7 +149,7 @@ describe('V3 add liquidity partial boosted', () => {
                     ],
                 },
                 testAddress,
-                poolStateWithUnderlyings: partialBoostedPool_WETH_stataUSDT,
+                poolStateWithUnderlyings: partialBoostedPool,
                 slippage: Slippage.fromPercentage('1'),
                 wethIsEth,
             };
@@ -173,7 +180,7 @@ describe('V3 add liquidity partial boosted', () => {
                 addLiquidityBoosted,
                 addLiquidityBoostedInput,
                 testAddress,
-                poolStateWithUnderlyings: partialBoostedPool_WETH_stataUSDT,
+                poolStateWithUnderlyings: partialBoostedPool,
                 slippage: Slippage.fromPercentage('1'),
                 wethIsEth,
             };
@@ -204,7 +211,7 @@ describe('V3 add liquidity partial boosted', () => {
                 addLiquidityBoosted,
                 addLiquidityBoostedInput,
                 testAddress,
-                poolStateWithUnderlyings: partialBoostedPool_WETH_stataUSDT,
+                poolStateWithUnderlyings: partialBoostedPool,
                 slippage: Slippage.fromPercentage('1'),
                 wethIsEth,
             };
@@ -242,7 +249,7 @@ describe('V3 add liquidity partial boosted', () => {
                 chainId,
                 rpcUrl,
                 kind: AddLiquidityKind.Proportional,
-                tokensIn: [USDT.address, WETH.address],
+                tokensIn: [AAVE.address, WETH.address],
             };
         });
 
@@ -253,7 +260,7 @@ describe('V3 add liquidity partial boosted', () => {
                 addLiquidityBoosted,
                 addLiquidityBoostedInput,
                 testAddress,
-                poolStateWithUnderlyings: partialBoostedPool_WETH_stataUSDT,
+                poolStateWithUnderlyings: partialBoostedPool,
                 slippage: Slippage.fromPercentage('1'),
                 wethIsEth,
             };
@@ -284,7 +291,7 @@ describe('V3 add liquidity partial boosted', () => {
                 addLiquidityBoosted,
                 addLiquidityBoostedInput,
                 testAddress,
-                poolStateWithUnderlyings: partialBoostedPool_WETH_stataUSDT,
+                poolStateWithUnderlyings: partialBoostedPool,
                 slippage: Slippage.fromPercentage('1'),
                 wethIsEth,
             };

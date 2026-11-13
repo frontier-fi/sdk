@@ -62,20 +62,12 @@ export async function assertSwapExactIn({
     if (expected.swapKind !== SwapKind.GivenIn) throw Error('Expected GivenIn');
     expect(expected.expectedAmountOut.amount > 0n).to.be.true;
 
-    let buildCallInput: SwapBuildCallInput = {
+    const buildCallInput: SwapBuildCallInput = {
         slippage,
         deadline,
         queryOutput: expected,
         wethIsEth,
     };
-
-    if (swap.protocolVersion === 2) {
-        buildCallInput = {
-            ...buildCallInput,
-            sender: testAddress,
-            recipient: testAddress,
-        };
-    }
 
     let call: SwapBuildOutputExactIn;
     if (usePermit2Signatures) {
@@ -188,20 +180,12 @@ export async function assertSwapExactOut({
     if (expected.swapKind !== SwapKind.GivenOut)
         throw Error('Expected GivenOut');
 
-    let buildCallInput: SwapBuildCallInput = {
+    const buildCallInput: SwapBuildCallInput = {
         slippage,
         deadline,
         queryOutput: expected,
         wethIsEth,
     };
-
-    if (swap.protocolVersion === 2) {
-        buildCallInput = {
-            ...buildCallInput,
-            sender: testAddress,
-            recipient: testAddress,
-        };
-    }
     expect(expected.expectedAmountIn.amount > 0n).to.be.true;
 
     let call: SwapBuildOutputExactOut;

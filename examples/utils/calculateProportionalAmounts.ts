@@ -5,7 +5,7 @@
  * pnpm example ./examples/utils/calculateProportionalAmounts.ts
  */
 import {
-    BalancerApi,
+    FrontierApi,
     API_ENDPOINT,
     calculateProportionalAmounts,
     InputAmount,
@@ -13,15 +13,14 @@ import {
 } from '../../src';
 
 const calculateProportionalAmountsExample = async () => {
-    const chainId = ChainId.MAINNET;
-    const poolDataProvider = new BalancerApi(API_ENDPOINT, chainId);
-    const poolId =
-        '0xf01b0684c98cd7ada480bfdf6e43876422fa1fc10002000000000000000005de'; // Gyroscope ECLP wstETH/wETH
+    const chainId = ChainId.SEPOLIA;
+    const poolDataProvider = new FrontierApi(API_ENDPOINT, chainId);
+    const poolId = '0xb790fa0ba5d563b814b0ca1716c414f6b99937b2';
     const pool =
         await poolDataProvider.pools.fetchPoolStateWithBalances(poolId);
     const inputAmount: InputAmount = {
-        rawAmount: 149277708680793000n,
-        address: '0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0', // wstETH
+        rawAmount: 10000000000000000n,
+        address: '0x7b79995e5f793a07bc00c21412e50ecae098e7f9',
         decimals: 18,
     };
     const { tokenAmounts, bptAmount } = calculateProportionalAmounts(

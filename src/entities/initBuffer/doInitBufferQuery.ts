@@ -1,7 +1,7 @@
 import { createPublicClient, http } from 'viem';
 import { ChainId, CHAINS } from '@/utils';
 import { Address } from '@/types';
-import { balancerBufferRouterAbiExtended } from '@/abi';
+import { frontierBufferRouterAbiExtended } from '@/abi';
 import { AddressProvider } from '@/entities/inputValidator/utils/addressProvider';
 
 export const doInitBufferQuery = async (
@@ -18,7 +18,7 @@ export const doInitBufferQuery = async (
 
     const { result: issuedShares } = await client.simulateContract({
         address: AddressProvider.BufferRouter(chainId),
-        abi: balancerBufferRouterAbiExtended,
+        abi: frontierBufferRouterAbiExtended,
         functionName: 'queryInitializeBuffer',
         args: [wrappedToken, exactAmountUnderlyingIn, exactAmountWrappedIn],
     });

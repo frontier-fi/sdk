@@ -50,6 +50,7 @@ const chainId = ChainId.SEPOLIA;
 const poolId = POOLS[chainId].MOCK_STABLE_POOL.id;
 
 const USDC = TOKENS[chainId].USDC_AAVE;
+const USDT = TOKENS[chainId].USDT_AAVE;
 const DAI = TOKENS[chainId].DAI_AAVE;
 
 describe('add liquidity test', () => {
@@ -94,7 +95,7 @@ describe('add liquidity test', () => {
             client,
             testAddress,
             tokens,
-            [USDC.slot, DAI.slot] as number[],
+            [USDC.slot, USDT.slot, DAI.slot] as number[],
             [...poolState.tokens.map((t) => parseUnits('100', t.decimals))],
         );
 
@@ -268,9 +269,14 @@ class MockApi {
                 index: 0,
             },
             {
+                address: USDT.address,
+                decimals: USDT.decimals,
+                index: 1,
+            },
+            {
                 address: DAI.address,
                 decimals: DAI.decimals,
-                index: 1,
+                index: 2,
             },
         ];
 

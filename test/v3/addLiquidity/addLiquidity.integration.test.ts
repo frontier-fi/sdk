@@ -47,9 +47,9 @@ import { ANVIL_NETWORKS, startFork } from '../../anvil/anvil-global-setup';
 const protocolVersion = 3;
 
 const chainId = ChainId.SEPOLIA;
-const poolId = POOLS[chainId].MOCK_WETH_BAL_POOL.id;
+const poolId = POOLS[chainId].MOCK_WETH_USDC_POOL.id;
 
-const BAL = TOKENS[chainId].BAL;
+const USDC = TOKENS[chainId].USDC_AAVE;
 const WETH = TOKENS[chainId].WETH;
 
 describe('add liquidity test', () => {
@@ -94,7 +94,7 @@ describe('add liquidity test', () => {
             client,
             testAddress,
             tokens,
-            [WETH.slot, BAL.slot] as number[],
+            [USDC.slot, WETH.slot] as number[],
             [...poolState.tokens.map((t) => parseUnits('100', t.decimals))],
         );
 
@@ -497,13 +497,13 @@ class MockApi {
     public async getPool(id: Hex): Promise<PoolState> {
         const tokens = [
             {
-                address: WETH.address,
-                decimals: WETH.decimals,
+                address: USDC.address,
+                decimals: USDC.decimals,
                 index: 0,
             },
             {
-                address: BAL.address,
-                decimals: BAL.decimals,
+                address: WETH.address,
+                decimals: WETH.decimals,
                 index: 1,
             },
         ];
