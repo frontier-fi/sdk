@@ -1,6 +1,6 @@
 ---
 name: changeset
-description: Write a changeset for @balancer/sdk. Use when a diff touches src/**, when picking a patch/minor/major bump, or when a PR needs release notes.
+description: Write a changeset for @frontier-fi/sdk. Use when a diff touches src/**, when picking a patch/minor/major bump, or when a PR needs release notes.
 ---
 
 # Add a changeset
@@ -15,7 +15,7 @@ Create `.changeset/<kebab-case-slug>.md`:
 
 ```markdown
 ---
-"@balancer/sdk": <patch|minor|major>
+"@frontier-fi/sdk": <patch|minor|major>
 ---
 
 <one imperative sentence ending with a period.>
@@ -36,7 +36,7 @@ Example of a major body, trimmed:
 
 ```markdown
 ---
-"@balancer/sdk": major
+"@frontier-fi/sdk": major
 ---
 
 Interpret RemoveLiquidityBoostedV3 tokensOut per pool token index rather than as a flat address map.
