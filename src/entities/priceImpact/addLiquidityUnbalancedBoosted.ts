@@ -1,18 +1,29 @@
-import { abs, ChainId, isSameAddress, SDKError } from '../../utils';
+import { Address } from 'viem';
 import { InputToken, SwapKind } from '../../types';
+import { ChainId, SDKError, abs, isSameAddress } from '../../utils';
+import { AddLiquidity } from '../addLiquidity';
+import { AddLiquidityBoostedV3 } from '../addLiquidityBoosted';
+import { AddLiquidityBoostedUnbalancedInput } from '../addLiquidityBoosted/types';
 import { PriceImpactAmount } from '../priceImpactAmount';
 import { RemoveLiquidityKind } from '../removeLiquidity/types';
-import { Swap, SwapInput, TokenApi } from '../swap';
-import { TokenAmount } from '../tokenAmount';
-import { PoolStateWithUnderlyings, PoolTokenWithUnderlying } from '../types';
-import { priceImpactABA } from './helper';
-import { AddLiquidityBoostedUnbalancedInput } from '../addLiquidityBoosted/types';
-import { AddLiquidityBoostedV3 } from '../addLiquidityBoosted';
 import { RemoveLiquidityBoostedV3 } from '../removeLiquidityBoosted';
 import { RemoveLiquidityBoostedProportionalInput } from '../removeLiquidityBoosted/types';
-import { Address } from 'viem';
+import { Swap, SwapInput, TokenApi } from '../swap';
 import { Token } from '../token';
-import { reconcileDeltas } from './addLiquidityUnbalanced';
+import { TokenAmount } from '../tokenAmount';
+import {
+    PoolState,
+    PoolStateWithUnderlyings,
+    PoolTokenWithUnderlying,
+} from '../types';
+import {
+    createDustBudget,
+    isSubMinimumAmountRevert,
+    isWrapSubMinimumRevert,
+    reconcileDeltas,
+} from './addLiquidityUnbalanced';
+import { previewErc4626 } from './erc4626Preview';
+import { priceImpactABA } from './helper';
 
 /**
  * Calculate price impact on add liquidity unbalanced operations
@@ -81,6 +92,15 @@ export async function addLiquidityUnbalancedBoosted(
 
     // deltas between unbalanced and proportional amounts
     const deltas = amountsOut.map((a, i) => a.amount - amountsIn[i].amount);
+    const dustBudget = createDustBudget(amountsIn, amountsOut);
+    const wrappedPoolState: PoolState = {
+        ...poolState,
+        tokens: poolState.tokens.map(({ index, address, decimals }) => ({
+            index,
+            address,
+            decimals,
+        })),
+    };
 
     // zero out deltas by swapping between tokens from proportionalAmounts
     // to exactAmountsIn, leaving the remaining delta within a single token
@@ -92,23 +112,29 @@ export async function addLiquidityUnbalancedBoosted(
                 addLiquidity,
                 input,
                 poolState,
+                wrappedPoolState,
                 poolTokens,
                 index,
                 deltas[index],
+                dustBudget,
             ),
         async (swapKind, tokenInIndex, tokenOutIndex, amount) => {
+            const tokenInWrapInfo = getTokenWrapInfo(
+                poolState.tokens,
+                tokenInIndex,
+                poolTokens[tokenInIndex].toInputToken(),
+            );
+            const tokenOutWrapInfo = getTokenWrapInfo(
+                poolState.tokens,
+                tokenOutIndex,
+                poolTokens[tokenOutIndex].toInputToken(),
+            );
             const swapInput = buildSwapInput(
                 input.chainId,
                 swapKind,
                 poolState.address,
-                getTokenWrapInfo(
-                    poolState.tokens,
-                    poolTokens[tokenInIndex].toInputToken(),
-                ),
-                getTokenWrapInfo(
-                    poolState.tokens,
-                    poolTokens[tokenOutIndex].toInputToken(),
-                ),
+                tokenInWrapInfo,
+                tokenOutWrapInfo,
                 swapKind === SwapKind.GivenIn ? amount : 0n,
                 swapKind === SwapKind.GivenOut ? amount : 0n,
             );
@@ -125,7 +151,33 @@ export async function addLiquidityUnbalancedBoosted(
                 return result.swapKind === SwapKind.GivenIn
                     ? result.expectedAmountOut.amount
                     : result.expectedAmountIn.amount;
-            } catch {
+            } catch (err) {
+                if (isSubMinimumAmountRevert(err)) {
+                    const givenIndex =
+                        swapKind === SwapKind.GivenIn
+                            ? tokenInIndex
+                            : tokenOutIndex;
+                    if (dustBudget.tryConsume(givenIndex, amount)) return null;
+
+                    if (
+                        isWrapSubMinimumRevert(err) &&
+                        (tokenInWrapInfo.shouldWrap ||
+                            tokenOutWrapInfo.shouldWrap)
+                    ) {
+                        try {
+                            return await queryPoolDirectSwap(
+                                input,
+                                wrappedPoolState,
+                                swapKind,
+                                tokenInWrapInfo,
+                                tokenOutWrapInfo,
+                                amount,
+                            );
+                        } catch {
+                            // Preserve the existing Swap step error contract.
+                        }
+                    }
+                }
                 throw new SDKError(
                     'Price Impact',
                     'Add Liquidity Boosted Unbalanced',
@@ -155,10 +207,12 @@ async function queryAddLiquidityForTokenDelta(
     addLiquidity: AddLiquidityBoostedV3,
     input: AddLiquidityBoostedUnbalancedInput,
     poolState: PoolStateWithUnderlyings,
+    wrappedPoolState: PoolState,
     poolTokens: Token[],
     tokenIndex: number,
     delta: bigint,
-): Promise<bigint> {
+    dustBudget: ReturnType<typeof createDustBudget>,
+): Promise<bigint | null> {
     const absDelta = TokenAmount.fromRawAmount(
         poolTokens[tokenIndex],
         abs(delta),
@@ -174,12 +228,131 @@ async function queryAddLiquidityForTokenDelta(
         );
         return deltaBPT.amount;
     } catch (err) {
+        let reportedError = err;
+        if (isSubMinimumAmountRevert(err)) {
+            if (dustBudget.tryConsume(tokenIndex, absDelta.amount)) return null;
+
+            const wrapInfo = getTokenWrapInfo(
+                poolState.tokens,
+                tokenIndex,
+                poolTokens[tokenIndex].toInputToken(),
+            );
+            if (isWrapSubMinimumRevert(err) && wrapInfo.shouldWrap) {
+                try {
+                    const wrapped = wrapInfo.wrapped!;
+                    const shares = await previewErc4626(
+                        input.rpcUrl,
+                        input.chainId,
+                        wrapped.address,
+                        'previewDeposit',
+                        absDelta.amount,
+                    );
+                    if (shares === 0n) {
+                        throw new Error('ERC4626 preview returned zero shares');
+                    }
+                    const { bptOut } = await new AddLiquidity().query(
+                        {
+                            ...input,
+                            amountsIn: [
+                                {
+                                    address: wrapped.address,
+                                    decimals: wrapped.decimals,
+                                    rawAmount: shares,
+                                },
+                            ],
+                        },
+                        wrappedPoolState,
+                    );
+                    return bptOut.amount;
+                } catch (fallbackError) {
+                    reportedError = fallbackError;
+                }
+            }
+        }
         throw new SDKError(
             'Price Impact',
             'Add Liquidity Boosted Unbalanced',
-            `Unexpected error while calculating addLiquidityBoostedUnbalanced PI at Delta add step:\n${err}`,
+            `Unexpected error while calculating addLiquidityBoostedUnbalanced PI at Delta add step:\n${reportedError}`,
         );
     }
+}
+
+/**
+ * Estimate a pool quote when a material leg cannot pass the buffer floor.
+ * The direct router and ERC4626 previews can differ from buffer rounding and
+ * from router-sensitive hooks.
+ */
+async function queryPoolDirectSwap(
+    input: AddLiquidityBoostedUnbalancedInput,
+    wrappedPoolState: PoolState,
+    swapKind: SwapKind,
+    tokenInWrapInfo: TokenWrapInfo,
+    tokenOutWrapInfo: TokenWrapInfo,
+    amount: bigint,
+): Promise<bigint> {
+    const poolTokenIn = tokenInWrapInfo.wrapped ?? tokenInWrapInfo.token;
+    const poolTokenOut = tokenOutWrapInfo.wrapped ?? tokenOutWrapInfo.token;
+    const tokenIn = {
+        address: poolTokenIn.address,
+        decimals: poolTokenIn.decimals,
+    };
+    const tokenOut = {
+        address: poolTokenOut.address,
+        decimals: poolTokenOut.decimals,
+    };
+    const givenWrapInfo =
+        swapKind === SwapKind.GivenIn ? tokenInWrapInfo : tokenOutWrapInfo;
+    let givenAmount = amount;
+    if (givenWrapInfo.shouldWrap) {
+        givenAmount = await previewErc4626(
+            input.rpcUrl,
+            input.chainId,
+            givenWrapInfo.wrapped!.address,
+            swapKind === SwapKind.GivenIn
+                ? 'previewDeposit'
+                : 'previewWithdraw',
+            amount,
+        );
+        if (givenAmount === 0n) {
+            throw new Error('ERC4626 preview returned zero shares');
+        }
+    }
+
+    const directSwap = new Swap({
+        chainId: input.chainId,
+        userData: input.userData,
+        swapKind,
+        paths: [
+            {
+                tokens: [tokenIn, tokenOut],
+                pools: [wrappedPoolState.address],
+                inputAmountRaw:
+                    swapKind === SwapKind.GivenIn ? givenAmount : 0n,
+                outputAmountRaw:
+                    swapKind === SwapKind.GivenOut ? givenAmount : 0n,
+                protocolVersion: 3,
+            },
+        ],
+    });
+    const result = await directSwap.query(
+        input.rpcUrl,
+        undefined,
+        input.sender,
+    );
+    const resultAmount =
+        result.swapKind === SwapKind.GivenIn
+            ? result.expectedAmountOut.amount
+            : result.expectedAmountIn.amount;
+    const resultWrapInfo =
+        swapKind === SwapKind.GivenIn ? tokenOutWrapInfo : tokenInWrapInfo;
+    if (!resultWrapInfo.shouldWrap) return resultAmount;
+    return previewErc4626(
+        input.rpcUrl,
+        input.chainId,
+        resultWrapInfo.wrapped!.address,
+        swapKind === SwapKind.GivenIn ? 'previewRedeem' : 'previewMint',
+        resultAmount,
+    );
 }
 
 type TokenWrapInfo = {
@@ -190,32 +363,32 @@ type TokenWrapInfo = {
 
 function getTokenWrapInfo(
     tokens: PoolTokenWithUnderlying[],
+    tokenIndex: number,
     token: InputToken,
 ): TokenWrapInfo {
-    const poolToken = tokens.find((t) =>
-        isSameAddress(t.address, token.address),
-    );
-    if (poolToken)
+    // The same address may be a pool token in one slot and an underlying in
+    // another. The query output and deltas are already in pool-index order.
+    const poolToken = tokens.find((t) => t.index === tokenIndex);
+    if (poolToken && isSameAddress(poolToken.address, token.address))
         return {
             token: poolToken,
             shouldWrap: false,
             wrapped: undefined,
         };
 
-    const wrapped = tokens
-        .filter((t) => t.underlyingToken !== null)
-        .find((t) => isSameAddress(t.underlyingToken!.address, token.address));
-
-    if (!wrapped)
+    if (
+        !poolToken?.underlyingToken ||
+        !isSameAddress(poolToken.underlyingToken.address, token.address)
+    )
         throw new SDKError(
             'Price Impact',
             'Add Liquidity Boosted Unbalanced',
-            `Cannot map underlying token to wrapped: ${token.address}`,
+            `Cannot map token ${token.address} to pool index ${tokenIndex}`,
         );
     return {
         token: token,
         shouldWrap: true,
-        wrapped,
+        wrapped: poolToken,
     };
 }
 

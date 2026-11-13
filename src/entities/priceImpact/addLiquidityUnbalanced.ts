@@ -1,5 +1,6 @@
-import { abs, SDKError } from '@/utils';
 import { SwapKind } from '@/types';
+import { SDKError, abs } from '@/utils';
+import { BaseError, ContractFunctionRevertedError } from 'viem';
 
 import { AddLiquidity } from '../addLiquidity';
 import { AddLiquidityUnbalancedInput } from '../addLiquidity/types';
@@ -9,11 +10,11 @@ import {
     RemoveLiquidityInput,
     RemoveLiquidityKind,
 } from '../removeLiquidity/types';
+import { Swap, SwapInput } from '../swap';
 import { Token } from '../token';
 import { TokenAmount } from '../tokenAmount';
 import { PoolState } from '../types';
 import { priceImpactABA } from './helper';
-import { Swap, SwapInput } from '../swap';
 
 export const addLiquidityUnbalanced = async (
     input: AddLiquidityUnbalancedInput,
@@ -56,6 +57,7 @@ export const addLiquidityUnbalanced = async (
 
     // deltas between unbalanced and proportional amounts
     const deltas = amountsOut.map((a, i) => a.amount - amountsIn[i].amount);
+    const dustBudget = createDustBudget(amountsIn, amountsOut);
 
     // zero out deltas by swapping between tokens from proportionalAmounts
     // to exactAmountsIn, leaving the remaining delta within a single token
@@ -88,7 +90,7 @@ export const addLiquidityUnbalanced = async (
         tokenInIndex: number,
         tokenOutIndex: number,
         amount: bigint,
-    ): Promise<bigint> {
+    ): Promise<bigint | null> {
         try {
             const swapInput: SwapInput = {
                 chainId: input.chainId,
@@ -118,7 +120,16 @@ export const addLiquidityUnbalanced = async (
             return result.swapKind === SwapKind.GivenIn
                 ? result.expectedAmountOut.amount
                 : result.expectedAmountIn.amount;
-        } catch {
+        } catch (err) {
+            const givenIndex =
+                swapKind === SwapKind.GivenIn ? tokenInIndex : tokenOutIndex;
+            if (
+                poolState.protocolVersion === 3 &&
+                isSubMinimumAmountRevert(err) &&
+                dustBudget.tryConsume(givenIndex, amount)
+            ) {
+                return null;
+            }
             throw new SDKError(
                 'Price Impact',
                 'Add Liquidity Unbalanced',
@@ -129,7 +140,7 @@ export const addLiquidityUnbalanced = async (
 
     async function queryAddLiquidityForTokenDelta(
         tokenIndex: number,
-    ): Promise<bigint> {
+    ): Promise<bigint | null> {
         const absDelta = TokenAmount.fromRawAmount(
             poolTokens[tokenIndex],
             abs(deltas[tokenIndex]),
@@ -143,7 +154,14 @@ export const addLiquidityUnbalanced = async (
                 poolState,
             );
             return deltaBPT.amount;
-        } catch {
+        } catch (err) {
+            if (
+                poolState.protocolVersion === 3 &&
+                isSubMinimumAmountRevert(err) &&
+                dustBudget.tryConsume(tokenIndex, absDelta.amount)
+            ) {
+                return null;
+            }
             throw new SDKError(
                 'Price Impact',
                 'Add Liquidity Unbalanced',
@@ -153,23 +171,77 @@ export const addLiquidityUnbalanced = async (
     }
 };
 
+const DUST_PRECISION = 10n ** 18n;
+const DUST_BUDGET = 10n ** 15n;
+
+/** Only decoded contract reverts are eligible for the dust fallback. */
+function getSubMinimumRevertName(err: unknown): string | undefined {
+    if (!(err instanceof BaseError)) return undefined;
+    const revert = err.walk(
+        (cause) => cause instanceof ContractFunctionRevertedError,
+    );
+    return revert instanceof ContractFunctionRevertedError
+        ? revert.data?.errorName
+        : undefined;
+}
+
+export function isSubMinimumAmountRevert(err: unknown): boolean {
+    const name = getSubMinimumRevertName(err);
+    return (
+        name === 'TradeAmountTooSmall' ||
+        name === 'WrapAmountTooSmall' ||
+        name === 'AmountGivenZero'
+    );
+}
+
+export function isWrapSubMinimumRevert(err: unknown): boolean {
+    const name = getSubMinimumRevertName(err);
+    return name === 'WrapAmountTooSmall' || name === 'AmountGivenZero';
+}
+
+/**
+ * Bound retired amounts relative to their own token legs. This does not bound
+ * the final ABA error when the token legs have different economic values.
+ */
+export function createDustBudget(
+    amountsIn: TokenAmount[],
+    amountsOut: TokenAmount[],
+): { tryConsume: (index: number, amount: bigint) => boolean } {
+    const legScales = amountsIn.map((amount, index) =>
+        amount.amount > amountsOut[index].amount
+            ? amount.amount
+            : amountsOut[index].amount,
+    );
+    let consumed = 0n;
+    return {
+        tryConsume(index, amount) {
+            const scale = legScales[index];
+            if (scale === undefined || scale <= 0n || amount < 0n) return false;
+            const cost = (amount * DUST_PRECISION + scale - 1n) / scale;
+            if (consumed + cost > DUST_BUDGET) return false;
+            consumed += cost;
+            return true;
+        },
+    };
+}
+
 /** Internal reconciliation shared by regular and boosted ABA calculations. */
 export async function reconcileDeltas(
     deltas: bigint[],
     amountsIn: TokenAmount[],
-    queryDeltaBPT: (index: number) => Promise<bigint>,
+    queryDeltaBPT: (index: number) => Promise<bigint | null>,
     querySwap: (
         kind: SwapKind,
         tokenInIndex: number,
         tokenOutIndex: number,
         amount: bigint,
-    ) => Promise<bigint>,
+    ) => Promise<bigint | null>,
 ): Promise<number | undefined> {
     const deltaBPTs = new Map<number, bigint>();
 
-    // Every swap clears at least one nonzero delta. Use raw balances to find
-    // surpluses/deficits: a BPT quote can round to zero for a nonzero delta.
-    for (let step = 0; step < deltas.length - 1; step++) {
+    // Each iteration clears at least one nonzero delta, through a swap or a
+    // dust retirement. A BPT quote can round to zero for a nonzero delta.
+    for (let step = 0; step < deltas.length * 2; step++) {
         const positive = deltas.flatMap((d, i) => (d > 0n ? [i] : []));
         const negative = deltas.flatMap((d, i) => (d < 0n ? [i] : []));
         if (positive.length === 0 || negative.length === 0) break;
@@ -185,11 +257,20 @@ export async function reconcileDeltas(
         let tokenInIndex = positive[0];
         let tokenOutIndex = negative[0];
         if (!finalGivenIn) {
+            let retired = false;
             for (const index of [...positive, ...negative]) {
                 if (!deltaBPTs.has(index)) {
-                    deltaBPTs.set(index, await queryDeltaBPT(index));
+                    const quote = await queryDeltaBPT(index);
+                    if (quote === null) {
+                        deltas[index] = 0n;
+                        deltaBPTs.delete(index);
+                        retired = true;
+                        break;
+                    }
+                    deltaBPTs.set(index, quote);
                 }
             }
+            if (retired) continue;
             const smallest = (indices: number[]) =>
                 indices.reduce((a, b) =>
                     deltaBPTs.get(a)! <= deltaBPTs.get(b)! ? a : b,
@@ -209,6 +290,10 @@ export async function reconcileDeltas(
                 deltas[tokenInIndex],
             );
             deltas[tokenInIndex] = 0n;
+            if (amountOut === null) {
+                deltaBPTs.delete(tokenInIndex);
+                continue;
+            }
             deltas[tokenOutIndex] += amountOut;
         } else {
             const amountIn = await querySwap(
@@ -218,6 +303,10 @@ export async function reconcileDeltas(
                 -deltas[tokenOutIndex],
             );
             deltas[tokenOutIndex] = 0n;
+            if (amountIn === null) {
+                deltaBPTs.delete(tokenOutIndex);
+                continue;
+            }
             deltas[tokenInIndex] -= amountIn;
         }
         deltaBPTs.delete(tokenInIndex);
@@ -230,8 +319,7 @@ export async function reconcileDeltas(
     if (deficits.length === 0) return undefined;
 
     // Quotes may exhaust the surpluses before all deficits are cleared. Value
-    // every remaining deficit in one deposited token using exact-output swaps;
-    // never discard a residual or divide by an initial amount of zero.
+    // remaining deficits in one deposited token using exact-output swaps.
     // Avoid normalizing the total residual by a tiny deposited leg. scale18
     // compares nominal token amounts (not market values). Preserve an existing
     // deficit when largest deposits tie, avoiding an unnecessary conversion.
@@ -264,7 +352,7 @@ export async function reconcileDeltas(
             -deltas[index],
         );
         deltas[index] = 0n;
-        deltas[remainingIndex] -= amountIn;
+        if (amountIn !== null) deltas[remainingIndex] -= amountIn;
     }
-    return remainingIndex;
+    return deltas[remainingIndex] === 0n ? undefined : remainingIndex;
 }
