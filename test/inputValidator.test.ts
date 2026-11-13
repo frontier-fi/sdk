@@ -27,6 +27,13 @@ describe('inputValidator', () => {
         }).toThrowError(/^Unsupported chainId: 777777777$/);
     });
 
+    test('BatchRouter should return address for BASE (chainId 8453)', () => {
+        expect(() => {
+            const address = AddressProvider.BatchRouter(ChainId.BASE);
+            expect(address).toBeDefined();
+        }).not.toThrow();
+    });
+
     test('BatchRouter should return address for SEPOLIA (chainId 11155111)', () => {
         expect(() => {
             const address = AddressProvider.BatchRouter(ChainId.SEPOLIA);
