@@ -31,6 +31,7 @@ export default defineConfig({
             'test/v3/addLiquidity/frontierLiquiditySlippageNative.test.ts',
             'test/v3/addLiquidityBoosted/frontierBoostedSlippageNative.test.ts',
             'test/v3/priceImpact/frontierReconciliation.regression.test.ts',
+            'test/v3/priceImpact/nestedQueryContext.regression.test.ts',
             'test/v3/createPool/weighted/weighted.validation.test.ts',
             'test/v3/createPool/stable/stable.validation.test.ts',
             'test/v3/createPool/gyroECLP/gyroECLP.validation.test.ts',

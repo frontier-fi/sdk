@@ -1,7 +1,15 @@
 import { InputAmount } from '@/types';
 import { AddLiquidity } from '../addLiquidity';
+import {
+    AddLiquidityBaseInput,
+    AddLiquidityKind,
+    AddLiquidityUnbalancedInput,
+} from '../addLiquidity/types';
+import { AddLiquidityBoostedV3 } from '../addLiquidityBoosted';
+import { AddLiquidityBoostedUnbalancedInput } from '../addLiquidityBoosted/types';
 import { AddLiquidityNestedInput } from '../addLiquidityNested/types';
 import { PriceImpactAmount } from '../priceImpactAmount';
+import { TokenAmount } from '../tokenAmount';
 import {
     NestedPoolState,
     NestedPoolV2,
@@ -9,14 +17,6 @@ import {
     PoolState,
 } from '../types';
 import { isPoolToken } from '../utils/isPoolToken';
-import {
-    AddLiquidityKind,
-    AddLiquidityUnbalancedInput,
-} from '../addLiquidity/types';
-import { ChainId } from '@/utils';
-import { TokenAmount } from '../tokenAmount';
-import { AddLiquidityBoostedUnbalancedInput } from '../addLiquidityBoosted/types';
-import { AddLiquidityBoostedV3 } from '../addLiquidityBoosted';
 import { addLiquidityUnbalanced } from './addLiquidityUnbalanced';
 import { addLiquidityUnbalancedBoosted } from './addLiquidityUnbalancedBoosted';
 
@@ -31,6 +31,12 @@ export async function addLiquidityNested(
 ): Promise<PriceImpactAmount> {
     const addLiquidity = new AddLiquidity();
     const addLiquidityBoosted = new AddLiquidityBoostedV3();
+    const queryContext: AddLiquidityBaseInput = {
+        chainId: input.chainId,
+        rpcUrl: input.rpcUrl,
+        sender: 'sender' in input ? input.sender : undefined,
+        userData: 'userData' in input ? input.userData : undefined,
+    };
     // sort pools from child to parent
     const sortedPools = nestedPoolState.pools.sort((a, b) => a.level - b.level);
     // Price impact amounts from all add actions
@@ -67,16 +73,14 @@ export async function addLiquidityNested(
         if (isBoostedPool)
             addResult = await getAddBoostedUnbalancedResult(
                 addLiquidityBoosted,
-                input.chainId,
-                input.rpcUrl,
+                queryContext,
                 pool as NestedPoolV3,
                 amountsIn,
             );
         else
             addResult = await getAddUnbalancedResult(
                 addLiquidity,
-                input.chainId,
-                input.rpcUrl,
+                queryContext,
                 pool as NestedPoolV2,
                 amountsIn,
                 nestedPoolState.protocolVersion,
@@ -96,15 +100,13 @@ export async function addLiquidityNested(
 
 async function getAddUnbalancedResult(
     addLiquidity: AddLiquidity,
-    chainId: ChainId,
-    rpcUrl: string,
+    queryContext: AddLiquidityBaseInput,
     pool: NestedPoolV2,
     amountsIn: InputAmount[],
     protocolVersion: 1 | 2 | 3,
 ): Promise<AddResult> {
     const addLiquidityInput: AddLiquidityUnbalancedInput = {
-        chainId,
-        rpcUrl,
+        ...queryContext,
         amountsIn,
         kind: AddLiquidityKind.Unbalanced,
     };
@@ -124,14 +126,12 @@ async function getAddUnbalancedResult(
 
 async function getAddBoostedUnbalancedResult(
     addLiquidityBoosted: AddLiquidityBoostedV3,
-    chainId: ChainId,
-    rpcUrl: string,
+    queryContext: AddLiquidityBaseInput,
     pool: NestedPoolV3,
     amountsIn: InputAmount[],
 ): Promise<AddResult> {
     const addLiquidityInput: AddLiquidityBoostedUnbalancedInput = {
-        chainId,
-        rpcUrl,
+        ...queryContext,
         amountsIn,
         kind: AddLiquidityKind.Unbalanced,
     };
