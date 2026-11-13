@@ -11,7 +11,9 @@ import { CreatePoolLiquidityBootstrapping } from '@/entities/createPool/createPo
 import { TOKENS } from 'test/lib/utils/addresses';
 import { AddressProvider } from '@/entities/inputValidator/utils/addressProvider';
 
-const chainId = ChainId.SEPOLIA;
+// Encoding-only tests for the retained upstream LBP API. Frontier Sepolia has
+// no LBP factories, so use the existing mainnet fixture without making RPC calls.
+const chainId = ChainId.MAINNET;
 const BAL = TOKENS[chainId].BAL;
 const WETH = TOKENS[chainId].WETH;
 
@@ -288,10 +290,10 @@ describe('CreatePoolLiquidityBootstrapping - FixedPrice Unit Tests', () => {
             expect(swapFeePercentage).toBe(parseUnits('0.10', 18));
         });
 
-        test('should handle different chain IDs', () => {
+        test('should handle configured chains and reject Frontier Sepolia', () => {
             const chainIds = [
                 ChainId.MAINNET,
-                ChainId.SEPOLIA,
+                ChainId.BASE,
                 ChainId.ARBITRUM_ONE,
             ] as const;
             chainIds.forEach((testChainId) => {
@@ -304,6 +306,14 @@ describe('CreatePoolLiquidityBootstrapping - FixedPrice Unit Tests', () => {
                     AddressProvider.FixedPriceLBPoolFactory(testChainId);
                 expect(result.to).toBe(expectedFactory);
             });
+            expect(() =>
+                createPool.buildCall({
+                    ...baseInput,
+                    chainId: ChainId.SEPOLIA,
+                }),
+            ).toThrow(
+                'Address not found for FixedPriceLBPoolFactory on chainId: 11155111',
+            );
         });
 
         test('should handle very large timestamps', () => {
