@@ -33,7 +33,6 @@ jobs:
         run: pnpm test:no-integration
         env:
           SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
-          BASE_RPC_URL: ${{ secrets.BASE_RPC_URL }}
   build:
     name: Build
     runs-on: ubuntu-latest

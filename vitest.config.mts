@@ -8,7 +8,6 @@ export default defineConfig(({ mode }) => {
     return {
         define: {
             'process.env.SEPOLIA_RPC_URL': JSON.stringify(env.SEPOLIA_RPC_URL),
-            'process.env.BASE_RPC_URL': JSON.stringify(env.BASE_RPC_URL),
             'process.env.SKIP_GLOBAL_SETUP': JSON.stringify(
                 env.SKIP_GLOBAL_SETUP,
             ),

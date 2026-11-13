@@ -12,12 +12,11 @@ export type NetworkSetup = {
     forkBlockNumber: bigint;
 };
 
-type NetworksWithFork = Extract<keyof typeof ChainId, 'SEPOLIA' | 'BASE'>;
+type NetworksWithFork = Extract<keyof typeof ChainId, 'SEPOLIA'>;
 
 const ANVIL_PORTS: Record<NetworksWithFork, number> = {
     // Ports separated by 100 to avoid port collision when running tests in parallel
     SEPOLIA: 8945,
-    BASE: 9045,
 };
 
 export const ANVIL_NETWORKS: Record<NetworksWithFork, NetworkSetup> = {
@@ -26,12 +25,6 @@ export const ANVIL_NETWORKS: Record<NetworksWithFork, NetworkSetup> = {
         fallBackRpc: 'https://sepolia.gateway.tenderly.co',
         port: ANVIL_PORTS.SEPOLIA,
         forkBlockNumber: 10845565n,
-    },
-    BASE: {
-        rpcEnv: 'BASE_RPC_URL',
-        fallBackRpc: 'https://mainnet.base.org',
-        port: ANVIL_PORTS.BASE,
-        forkBlockNumber: 42000000n,
     },
 };
 
