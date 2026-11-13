@@ -5,6 +5,9 @@ import { getSortedTokens } from '@/entities/utils';
 import { Hex } from '@/types';
 import { balancerV3Contracts, protocolVersionError } from '@/utils';
 
+import { balancerRouterAbiExtended } from '@/abi';
+import { Permit } from '@/entities/permitHelper';
+import { encodeFunctionData, zeroAddress } from 'viem';
 import { getAmountsCall, getAmountsQuery } from '../helper';
 import {
     RemoveLiquidityBase,
@@ -14,17 +17,14 @@ import {
     RemoveLiquidityKind,
     RemoveLiquidityV3BuildCallInput,
 } from '../types';
-import { doRemoveLiquiditySingleTokenExactOutQuery } from './doRemoveLiquiditySingleTokenExactOutQuery';
-import { doRemoveLiquiditySingleTokenExactInQuery } from './doRemoveLiquiditySingleTokenExactInQuery';
 import { doRemoveLiquidityProportionalQuery } from './doRemoveLiquidityProportionalQuery';
 import { doRemoveLiquidityRecoveryQuery } from './doRemoveLiquidityRecoveryQuery';
-import { encodeRemoveLiquiditySingleTokenExactOut } from './encodeRemoveLiquiditySingleTokenExactOut';
-import { encodeRemoveLiquiditySingleTokenExactIn } from './encodeRemoveLiquiditySingleTokenExactIn';
+import { doRemoveLiquiditySingleTokenExactInQuery } from './doRemoveLiquiditySingleTokenExactInQuery';
+import { doRemoveLiquiditySingleTokenExactOutQuery } from './doRemoveLiquiditySingleTokenExactOutQuery';
 import { encodeRemoveLiquidityProportional } from './encodeRemoveLiquidityProportional';
 import { encodeRemoveLiquidityRecovery } from './encodeRemoveLiquidityRecovery';
-import { encodeFunctionData, zeroAddress } from 'viem';
-import { balancerRouterAbiExtended } from '@/abi';
-import { Permit } from '@/entities/permitHelper';
+import { encodeRemoveLiquiditySingleTokenExactIn } from './encodeRemoveLiquiditySingleTokenExactIn';
+import { encodeRemoveLiquiditySingleTokenExactOut } from './encodeRemoveLiquiditySingleTokenExactOut';
 
 import { AddressProvider } from '@/entities/inputValidator/utils/addressProvider';
 
@@ -32,7 +32,7 @@ export class RemoveLiquidityV3 implements RemoveLiquidityBase {
     public async query(
         input: RemoveLiquidityInput,
         poolState: PoolState,
-        block?: bigint,
+        block = input.block,
     ): Promise<RemoveLiquidityBaseQueryOutput> {
         const sortedTokens = getSortedTokens(poolState.tokens, input.chainId);
         const amounts = getAmountsQuery(sortedTokens, input);
@@ -101,7 +101,7 @@ export class RemoveLiquidityV3 implements RemoveLiquidityBase {
                 {
                     maxBptAmountIn = amounts.maxBptAmountIn;
                     minAmountsOut = await doRemoveLiquidityRecoveryQuery(
-                        input,
+                        { ...input, block },
                         poolState.address,
                     );
                 }
