@@ -11,7 +11,9 @@ import {
 import { TOKENS } from 'test/lib/utils/addresses';
 import { zeroAddress } from 'viem';
 
-const chainId = ChainId.SEPOLIA;
+// Valid-input cases also build calldata, so use a configured upstream factory.
+// Frontier Sepolia deliberately has no fixed-price LBP factory.
+const chainId = ChainId.MAINNET;
 const BAL = TOKENS[chainId].BAL;
 const WETH = TOKENS[chainId].WETH;
 
