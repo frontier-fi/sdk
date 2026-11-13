@@ -1,7 +1,8 @@
 import { SwapKind } from '@/types';
+import { SDKError } from '@/utils/errors';
 import { Slippage } from '../slippage';
 import { TokenAmount } from '../tokenAmount';
-import { QueryOutputBase } from './types';
+import { ExactInQueryOutput, ExactOutQueryOutput } from './types';
 
 /**
  * Apply slippage to expectedAmount. GivenIn: Remove to give minOut. GivenOut: Add to give maxIn.
@@ -32,7 +33,7 @@ export function getLimitAmount(
  */
 export function getPathLimits(
     slippage: Slippage,
-    expected: QueryOutputBase,
+    expected: ExactInQueryOutput | ExactOutQueryOutput,
     maxAmount: bigint,
 ): bigint[] | undefined {
     if (!expected.pathAmounts) return undefined;
@@ -48,8 +49,16 @@ export function getPathLimits(
         cumulativeLimit = nextLimit;
         return limit;
     });
-    if (cumulativeLimit !== maxAmount) {
-        throw new Error('Swap path amounts do not match the aggregate quote');
+    const quotedAmount =
+        expected.swapKind === SwapKind.GivenIn
+            ? expected.expectedAmountOut.amount
+            : expected.expectedAmountIn.amount;
+    if (cumulativeAmount !== quotedAmount || cumulativeLimit !== maxAmount) {
+        throw new SDKError(
+            'Input Validation',
+            'Swap',
+            'Swap path amounts do not match the aggregate quote',
+        );
     }
     return pathLimits;
 }
