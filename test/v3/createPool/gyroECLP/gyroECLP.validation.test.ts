@@ -12,7 +12,7 @@ import {
 import { computeDerivedEclpParams } from 'src/entities/createPool/createPoolV3/gyroECLP/createPoolGyroECLP';
 import { TOKENS } from 'test/lib/utils/addresses';
 
-import { GyroECLPMath } from '@balancer-labs/balancer-maths';
+import { GyroECLPMath } from '@frontier-fi/maths';
 
 const {
     _ONE,
