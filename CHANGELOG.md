@@ -5,9 +5,6 @@
 Initial Frontier package, forked from the SDK 6.2.1 codebase.
 
 - Use Frontier's canonical Sepolia WETH for native-token funding.
-- Apply liquidity slippage limits consistently to calldata and native funding.
-- Distribute slippage rounding across swap paths.
-- Correct liquidity price-impact reconciliation and preserve query context.
 
 The entries below describe the inherited Balancer package history.
 

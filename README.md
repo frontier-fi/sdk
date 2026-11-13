@@ -3,9 +3,9 @@
 [![npm version](https://img.shields.io/npm/v/@frontier-fi/sdk/latest.svg)](https://www.npmjs.com/package/@frontier-fi/sdk/v/latest)
 
 SDK for Frontier, forked from Balancer SDK 6.2.1. The first Frontier package is
-`@frontier-fi/sdk@0.1.0`. This release fixes existing consumer paths and retains the
-inherited public API; it does not remove V2 support or replace consumers' Frontier
-`AddressProvider` configuration.
+`@frontier-fi/sdk@0.1.0`. It retains the inherited public API, uses Frontier's
+canonical Sepolia WETH for native-token funding, and does not remove V2 support
+or replace consumers' Frontier `AddressProvider` configuration.
 
 ## Installation
 
