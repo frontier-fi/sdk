@@ -58,10 +58,10 @@ import { AddressProvider } from '@/entities/inputValidator/utils/addressProvider
 const protocolVersion = 3;
 
 const chainId = ChainId.SEPOLIA;
-const poolId = POOLS[chainId].MOCK_WETH_BAL_POOL.address;
+const poolId = POOLS[chainId].MOCK_WETH_USDC_POOL.address;
 
+const USDC = TOKENS[chainId].USDC_AAVE;
 const WETH = TOKENS[chainId].WETH;
-const BAL = TOKENS[chainId].BAL;
 
 describe('remove liquidity test', () => {
     let client: PublicWalletClient & TestActions;
@@ -129,7 +129,7 @@ describe('remove liquidity test', () => {
             client,
             testAddress,
             tokens,
-            [WETH.slot, BAL.slot] as number[],
+            [USDC.slot, WETH.slot] as number[],
             [...poolState.tokens.map((t) => parseUnits('100', t.decimals))],
         );
         await approveTokens(
@@ -377,7 +377,7 @@ describe('remove liquidity test', () => {
         let input: RemoveLiquidityRecoveryInput;
         beforeEach(async () => {
             const bptIn: InputAmount = {
-                rawAmount: parseEther('0.1'),
+                rawAmount: parseEther('0.01'),
                 decimals: 18,
                 address: poolState.address,
             };
@@ -418,13 +418,13 @@ class MockApi {
     public async getPool(id: Hex): Promise<PoolState> {
         const tokens = [
             {
-                address: WETH.address,
-                decimals: WETH.decimals,
+                address: USDC.address,
+                decimals: USDC.decimals,
                 index: 0,
             },
             {
-                address: BAL.address,
-                decimals: BAL.decimals,
+                address: WETH.address,
+                decimals: WETH.decimals,
                 index: 1,
             },
         ];
@@ -445,7 +445,7 @@ class MockApi {
 const AUTHORIZER_SEPOLIA =
     '0xEdFdDa22252399BDDAeE8d6D8e93c32cA3c31eeE' as const;
 const ADMIN_OF_AUTHORIZER =
-    '0x9098b50ee2d9E4c3C69928A691DA3b192b4C9673' as const;
+    '0xAD2906fAf5eFEC651f54372b121414FF0EeC6B1D' as const;
 const authorizerAbi = parseAbi([
     'function grantRole(bytes32 role, address account)',
 ]);
@@ -463,6 +463,11 @@ async function putPoolIntoRecoveryMode(
         args: [toFunctionSelector('function enableRecoveryMode(address)')],
     });
 
+    await client.setBalance({
+        address: ADMIN_OF_AUTHORIZER,
+        value: parseEther('1'),
+    });
+
     // grant the testAddress the right to enable Recovery mode for pools
     const { request: grantRoleRequest } = await client.simulateContract({
         address: AUTHORIZER_SEPOLIA,
@@ -476,7 +481,8 @@ async function putPoolIntoRecoveryMode(
     await client.impersonateAccount({ address: ADMIN_OF_AUTHORIZER });
 
     // Do transaction to grant the testAccount the right to put pools into recovery mode
-    await client.writeContract(grantRoleRequest);
+    const grantRoleHash = await client.writeContract(grantRoleRequest);
+    await client.waitForTransactionReceipt({ hash: grantRoleHash });
 
     await client.stopImpersonatingAccount({ address: ADMIN_OF_AUTHORIZER });
 
@@ -491,6 +497,9 @@ async function putPoolIntoRecoveryMode(
         });
 
     // put pool into recovery mode
-    await client.writeContract(enableRecoveryModeRequest);
+    const enableRecoveryHash = await client.writeContract(
+        enableRecoveryModeRequest,
+    );
+    await client.waitForTransactionReceipt({ hash: enableRecoveryHash });
 }
 /******************************************************************************/

@@ -6,7 +6,6 @@ config();
 import {
     Address,
     createTestClient,
-    erc4626Abi,
     http,
     parseUnits,
     publicActions,
@@ -31,16 +30,16 @@ import {
     approveTokens,
     TOKENS,
     sendTransactionGetBalances,
-    setTokenBalance,
+    setTokenBalances,
 } from '../../lib/utils';
 import { ANVIL_NETWORKS, startFork } from '../../anvil/anvil-global-setup';
-import { bufferState_USDC_stataUSDC } from 'test/mockData/bufferState';
+import { bufferState_WBTC_stataEthWBTC } from 'test/mockData/bufferState';
 
 const protocolVersion = 3;
 
 const chainId = ChainId.SEPOLIA;
-const USDC = TOKENS[chainId].USDC_AAVE;
-const stataUSDC = TOKENS[chainId].stataUSDC;
+const WBTC = TOKENS[chainId].WBTC;
+const stataWBTC = TOKENS[chainId].stataEthWBTC;
 
 describe('Buffer AddLiquidity', () => {
     let client: PublicWalletClient & TestActions;
@@ -50,11 +49,7 @@ describe('Buffer AddLiquidity', () => {
     const addLiquidityBuffer = new AddLiquidityBufferV3();
 
     beforeAll(async () => {
-        ({ rpcUrl } = await startFork(
-            ANVIL_NETWORKS[ChainId[chainId]],
-            undefined,
-            7923022n,
-        ));
+        ({ rpcUrl } = await startFork(ANVIL_NETWORKS[ChainId[chainId]]));
 
         client = createTestClient({
             mode: 'anvil',
@@ -68,29 +63,16 @@ describe('Buffer AddLiquidity', () => {
 
         testAddress = accounts[0];
 
-        await setTokenBalance(
+        await setTokenBalances(
             client,
             testAddress,
-            USDC.address,
-            USDC.slot as number,
-            parseUnits('100000', USDC.decimals),
+            [WBTC.address, stataWBTC.address],
+            [WBTC.slot as number, stataWBTC.slot as number],
+            [
+                parseUnits('10', WBTC.decimals),
+                parseUnits('10', stataWBTC.decimals),
+            ],
         );
-
-        await approveSpenderOnTokens(
-            client,
-            testAddress,
-            [USDC.address],
-            stataUSDC.address,
-        );
-
-        await client.writeContract({
-            account: testAddress,
-            chain: CHAINS[chainId],
-            abi: erc4626Abi,
-            address: stataUSDC.address,
-            functionName: 'deposit',
-            args: [parseUnits('10000', USDC.decimals), testAddress],
-        });
 
         snapshot = await client.snapshot();
     });
@@ -108,7 +90,7 @@ describe('Buffer AddLiquidity', () => {
             await approveTokens(
                 client,
                 testAddress as Address,
-                [USDC.address, stataUSDC.address],
+                [WBTC.address, stataWBTC.address],
                 protocolVersion,
             );
         });
@@ -122,7 +104,7 @@ describe('Buffer AddLiquidity', () => {
             const addLiquidityBufferQueryOutput =
                 await addLiquidityBuffer.query(
                     addLiquidityBufferInput,
-                    bufferState_USDC_stataUSDC,
+                    bufferState_WBTC_stataEthWBTC,
                 );
 
             expect(addLiquidityBufferQueryOutput.wrappedAmountIn.amount > 0n).to
@@ -144,7 +126,7 @@ describe('Buffer AddLiquidity', () => {
 
             const { transactionReceipt, balanceDeltas } =
                 await sendTransactionGetBalances(
-                    [stataUSDC.address, USDC.address],
+                    [stataWBTC.address, WBTC.address],
                     client,
                     testAddress,
                     addLiquidityBufferBuildCallOutput.to,
@@ -178,12 +160,12 @@ describe('Buffer AddLiquidity', () => {
 
     describe('permit 2 signatures', () => {
         beforeEach(async () => {
-            // approve Permit2 to spend users DAI/USDC
+            // approve Permit2 to spend user tokens
             // does not include the sub approvals
             await approveSpenderOnTokens(
                 client,
                 testAddress,
-                [USDC.address, stataUSDC.address],
+                [WBTC.address, stataWBTC.address],
                 PERMIT2[chainId],
             );
         });
@@ -198,7 +180,7 @@ describe('Buffer AddLiquidity', () => {
             const addLiquidityBufferQueryOutput =
                 await addLiquidityBuffer.query(
                     addLiquidityInput,
-                    bufferState_USDC_stataUSDC,
+                    bufferState_WBTC_stataEthWBTC,
                 );
             const slippage = Slippage.fromPercentage('1');
             const addLiquidityBufferBuildInput: AddLiquidityBufferBuildCallInput =
@@ -221,7 +203,7 @@ describe('Buffer AddLiquidity', () => {
 
             const { transactionReceipt, balanceDeltas } =
                 await sendTransactionGetBalances(
-                    [stataUSDC.address, USDC.address],
+                    [stataWBTC.address, WBTC.address],
                     client,
                     testAddress,
                     addLiquidityBufferBuildCallOutput.to,

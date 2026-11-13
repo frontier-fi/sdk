@@ -3,7 +3,7 @@ import { FrontierApi } from '@/data/providers/frontier-api';
 import { API_ENDPOINT, ChainId } from '@/utils';
 
 const CHAIN_ID = ChainId.SEPOLIA;
-const BOOSTED_POOL_ID = '0x59fa488dda749cdd41772bb068bb23ee955a6d7a';
+const BOOSTED_POOL_ID = '0x8e06ef1a2e854feaee0a83510acd05f8e443fa4f';
 
 describe('contract: boosted-pool-state (live API)', () => {
     const api = new FrontierApi(API_ENDPOINT, CHAIN_ID, {

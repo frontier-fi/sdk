@@ -7,7 +7,7 @@ import { SwapKind } from '@/types';
 
 const CHAIN_ID = ChainId.SEPOLIA;
 const TOKEN_IN = '0xfff9976782d46cc05630d1f6ebab18b2324d6b14' as Address; // Sepolia WETH
-const TOKEN_OUT = '0x80d6d3946ed8a1da4e226aa21ccddc32bd127d1a' as Address; // Sepolia USDC
+const TOKEN_OUT = '0x94a9d9ac8a22534e3faca9f4e7f2e2cf85d5e4c8' as Address; // Sepolia USDC_AAVE
 
 describe('contract: sor swap paths (live API)', () => {
     const api = new FrontierApi(API_ENDPOINT, CHAIN_ID, {

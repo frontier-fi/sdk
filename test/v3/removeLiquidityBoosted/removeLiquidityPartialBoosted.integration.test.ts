@@ -17,6 +17,7 @@ import {
     Address,
     ChainId,
     CHAINS,
+    PoolStateWithUnderlyings,
     PublicWalletClient,
     Token,
     Slippage,
@@ -35,7 +36,7 @@ import {
     sendTransactionGetBalances,
     TOKENS,
 } from 'test/lib/utils';
-import { partialBoostedPool_WETH_stataUSDT } from 'test/mockData/partialBoostedPool';
+import { createPartialBoostedPool } from 'test/mockData/partialBoostedPool';
 import { AddressProvider } from '@/entities/inputValidator/utils/addressProvider';
 
 function validateTokenAmounts(
@@ -50,16 +51,11 @@ function validateTokenAmounts(
 }
 
 const chainId = ChainId.SEPOLIA;
-const USDT = TOKENS[chainId].USDT_AAVE;
+const AAVE = TOKENS[chainId].AAVE;
 const WETH = TOKENS[chainId].WETH;
 
-const parentBptToken = new Token(
-    chainId,
-    partialBoostedPool_WETH_stataUSDT.address,
-    18,
-);
 // These are the underlying tokens
-const usdtToken = new Token(chainId, USDT.address, USDT.decimals);
+const aaveToken = new Token(chainId, AAVE.address, AAVE.decimals);
 const wethToken = new Token(chainId, WETH.address, WETH.decimals);
 
 describe('V3 remove liquidity partial boosted', () => {
@@ -69,6 +65,8 @@ describe('V3 remove liquidity partial boosted', () => {
     const removeLiquidityBoosted = new RemoveLiquidityBoostedV3();
     let bptAmount: bigint;
     let snapshot: Hex;
+    let partialBoostedPool: PoolStateWithUnderlyings;
+    let parentBptToken: Token;
 
     let removeLiquidityInput: RemoveLiquidityBoostedProportionalInput;
 
@@ -78,12 +76,19 @@ describe('V3 remove liquidity partial boosted', () => {
         client = createTestClient({
             mode: 'anvil',
             chain: CHAINS[chainId],
-            transport: http(rpcUrl),
+            transport: http(rpcUrl, { timeout: 120_000 }),
         })
             .extend(publicActions)
             .extend(walletActions);
 
         testAddress = (await client.getAddresses())[0];
+
+        partialBoostedPool = await createPartialBoostedPool(
+            client,
+            rpcUrl,
+            testAddress,
+        );
+        parentBptToken = new Token(chainId, partialBoostedPool.address, 18);
 
         /*
         We can't use the slot method to set test address BPT balance so we add liquidity instead to get the BPT.
@@ -93,13 +98,13 @@ describe('V3 remove liquidity partial boosted', () => {
             rpcUrl,
             testAddress,
             client,
-            partialBoostedPool_WETH_stataUSDT,
+            partialBoostedPool,
             [
                 {
-                    address: USDT.address,
-                    rawAmount: parseUnits('10', USDT.decimals),
-                    decimals: USDT.decimals,
-                    slot: USDT.slot as number,
+                    address: AAVE.address,
+                    rawAmount: parseUnits('0.2', AAVE.decimals),
+                    decimals: AAVE.decimals,
+                    slot: AAVE.slot as number,
                 },
                 {
                     address: WETH.address,
@@ -114,16 +119,16 @@ describe('V3 remove liquidity partial boosted', () => {
             chainId,
             rpcUrl,
             bptIn: {
-                address: partialBoostedPool_WETH_stataUSDT.address,
+                address: partialBoostedPool.address,
                 decimals: 18,
                 rawAmount: bptAmount,
             },
-            tokensOut: [USDT.address, WETH.address],
+            tokensOut: [AAVE.address, WETH.address],
             kind: RemoveLiquidityKind.Proportional,
         };
 
         snapshot = await client.snapshot();
-    });
+    }, 120_000);
 
     beforeEach(async () => {
         await client.revert({
@@ -135,14 +140,10 @@ describe('V3 remove liquidity partial boosted', () => {
     test('query with underlying', async () => {
         const queryOutput = await removeLiquidityBoosted.query(
             removeLiquidityInput,
-            partialBoostedPool_WETH_stataUSDT,
+            partialBoostedPool,
         );
-        expect(queryOutput.poolType).to.eq(
-            partialBoostedPool_WETH_stataUSDT.type,
-        );
-        expect(queryOutput.poolId).to.eq(
-            partialBoostedPool_WETH_stataUSDT.address,
-        );
+        expect(queryOutput.poolType).to.eq(partialBoostedPool.type);
+        expect(queryOutput.poolId).to.eq(partialBoostedPool.address);
         expect(queryOutput.chainId).to.eq(chainId);
         expect(queryOutput.userData).to.eq('0x');
         expect(queryOutput.protocolVersion).toEqual(3);
@@ -151,9 +152,9 @@ describe('V3 remove liquidity partial boosted', () => {
             removeLiquidityInput.bptIn.rawAmount,
         );
         expect(queryOutput.amountsOut.length).to.eq(
-            partialBoostedPool_WETH_stataUSDT.tokens.length,
+            partialBoostedPool.tokens.length,
         );
-        validateTokenAmounts(queryOutput.amountsOut, [usdtToken, wethToken]);
+        validateTokenAmounts(queryOutput.amountsOut, [aaveToken, wethToken]);
     });
 
     describe('remove liquidity transaction', async () => {
@@ -168,7 +169,7 @@ describe('V3 remove liquidity partial boosted', () => {
 
             const queryOutput = await removeLiquidityBoosted.query(
                 removeLiquidityInput,
-                partialBoostedPool_WETH_stataUSDT,
+                partialBoostedPool,
             );
 
             const removeLiquidityBuildInput = {
@@ -232,7 +233,7 @@ describe('V3 remove liquidity partial boosted', () => {
 
             const queryOutput = await removeLiquidityBoosted.query(
                 removeLiquidityInput,
-                partialBoostedPool_WETH_stataUSDT,
+                partialBoostedPool,
             );
 
             const removeLiquidityBuildInput = {

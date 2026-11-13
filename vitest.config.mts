@@ -18,14 +18,9 @@ export default defineConfig(({ mode }) => {
             setupFiles: ['/test/vitest-setup.ts'],
             globals: true,
             pool: 'forks',
-            // Limit concurrent forks to avoid overwhelming RPC providers with too many connections
+            // Limit concurrent workers to avoid overwhelming RPC providers with too many connections
             // Each fork creates its own Anvil instance which makes RPC calls
-            poolOptions: {
-                forks: {
-                    maxForks: 3,
-                    minForks: 1,
-                },
-            },
+            maxWorkers: 2,
             // Uncomment to debug suite excluding some tests
             // exclude: ['test/*weighted*.integration.*', 'node_modules', 'dist'],
             // Uncomment to run integration tests sequentially

@@ -38,7 +38,7 @@ import { AddressProvider } from '@/entities/inputValidator/utils/addressProvider
 const protocolVersion = 3;
 const chainId = ChainId.SEPOLIA;
 const poolType = PoolType.GyroE;
-const WETH = TOKENS[chainId].WETH;
+const TOK0 = TOKENS[chainId].TOK0;
 const DAI = TOKENS[chainId].DAI;
 
 describe('GyroECLP - create & init', () => {
@@ -64,15 +64,15 @@ describe('GyroECLP - create & init', () => {
         await setTokenBalances(
             client,
             testAddress,
-            [DAI.address, WETH.address],
-            [DAI.slot!, WETH.slot!],
+            [DAI.address, TOK0.address],
+            [DAI.slot!, TOK0.slot!],
             [parseUnits('10000', 18), parseUnits('10000', 18)],
         );
 
         await approveSpenderOnTokens(
             client,
             testAddress,
-            [DAI.address, WETH.address],
+            [DAI.address, TOK0.address],
             PERMIT2[chainId],
         );
         const eclpParams = {
@@ -83,13 +83,13 @@ describe('GyroECLP - create & init', () => {
             lambda: parseUnits('100000', 18),
         };
 
-        // WETH in terms of DAI
+        // TOK0 in terms of DAI
         poolInput = {
             poolType,
-            symbol: 'GYRO-WETH-DAI',
+            symbol: 'GYRO-TOK0-DAI',
             tokens: [
                 {
-                    address: WETH.address,
+                    address: TOK0.address,
                     rateProvider: zeroAddress,
                     tokenType: TokenType.STANDARD,
                     paysYieldFees: false,
@@ -182,9 +182,9 @@ describe('GyroECLP - create & init', () => {
         const initPoolInput = {
             amountsIn: [
                 {
-                    address: WETH.address,
-                    rawAmount: parseUnits('1', WETH.decimals),
-                    decimals: WETH.decimals,
+                    address: TOK0.address,
+                    rawAmount: parseUnits('1', TOK0.decimals),
+                    decimals: TOK0.decimals,
                 },
                 {
                     address: DAI.address,
@@ -217,7 +217,7 @@ describe('GyroECLP - create & init', () => {
         );
 
         const txOutput = await sendTransactionGetBalances(
-            [WETH.address, DAI.address],
+            [TOK0.address, DAI.address],
             client,
             testAddress,
             initPoolBuildOutput.to,

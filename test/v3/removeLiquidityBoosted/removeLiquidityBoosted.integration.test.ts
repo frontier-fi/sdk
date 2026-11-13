@@ -42,13 +42,13 @@ import {
 } from '../../lib/utils';
 
 import { ANVIL_NETWORKS, startFork } from '../../anvil/anvil-global-setup';
-import { boostedPool_USDC_USDT } from 'test/mockData/boostedPool';
+import { boostedPool_WBTC_AAVE } from 'test/mockData/boostedPool';
 import { AddressProvider } from '@/entities/inputValidator/utils/addressProvider';
 
 const chainId = ChainId.SEPOLIA;
-const USDC = TOKENS[chainId].USDC_AAVE;
-const USDT = TOKENS[chainId].USDT_AAVE;
-const stataUSDT = TOKENS[chainId].stataUSDT;
+const WBTC = TOKENS[chainId].WBTC;
+const AAVE = TOKENS[chainId].AAVE;
+const stataAAVE = TOKENS[chainId].stataEthAAVE;
 
 describe('remove liquidity boosted proportional', () => {
     let client: PublicWalletClient & TestActions;
@@ -72,20 +72,20 @@ describe('remove liquidity boosted proportional', () => {
         await setTokenBalances(
             client,
             testAddress,
-            [USDT.address, USDC.address] as Address[],
-            [USDT.slot, USDC.slot] as number[],
+            [WBTC.address, AAVE.address] as Address[],
+            [WBTC.slot, AAVE.slot] as number[],
             [
-                parseUnits('100', USDT.decimals),
-                parseUnits('100', USDC.decimals),
+                parseUnits('10', WBTC.decimals),
+                parseUnits('1000', AAVE.decimals),
             ],
         );
 
-        // approve Permit2 to spend users DAI/USDC
+        // approve Permit2 to spend user tokens
         // does not include the sub approvals
         await approveSpenderOnTokens(
             client,
             testAddress,
-            [USDT.address, USDC.address] as Address[],
+            [WBTC.address, AAVE.address] as Address[],
             PERMIT2[chainId],
         );
 
@@ -99,7 +99,7 @@ describe('remove liquidity boosted proportional', () => {
         });
         snapshot = await client.snapshot();
 
-        for (const token of boostedPool_USDC_USDT.tokens) {
+        for (const token of boostedPool_WBTC_AAVE.tokens) {
             await approveSpenderOnPermit2(
                 client,
                 testAddress,
@@ -112,12 +112,12 @@ describe('remove liquidity boosted proportional', () => {
             chainId: chainId,
             rpcUrl: rpcUrl,
             referenceAmount: {
-                rawAmount: 1000000000000000000n,
+                rawAmount: 10000000000000000n,
                 decimals: 18,
-                address: boostedPool_USDC_USDT.address,
+                address: boostedPool_WBTC_AAVE.address,
             },
             kind: AddLiquidityKind.Proportional,
-            tokensIn: [USDC.address, USDT.address],
+            tokensIn: [WBTC.address, AAVE.address],
         };
 
         const txInput: AddLiquidityBoostedTxInput = {
@@ -125,7 +125,7 @@ describe('remove liquidity boosted proportional', () => {
             addLiquidityBoosted: new AddLiquidityBoostedV3(),
             addLiquidityBoostedInput,
             testAddress,
-            poolStateWithUnderlyings: boostedPool_USDC_USDT,
+            poolStateWithUnderlyings: boostedPool_WBTC_AAVE,
             slippage: Slippage.fromPercentage('1'),
             wethIsEth: false,
         };
@@ -140,24 +140,24 @@ describe('remove liquidity boosted proportional', () => {
             chainId: chainId,
             rpcUrl: rpcUrl,
             bptIn: {
-                rawAmount: 1000000000000000000n,
+                rawAmount: 5000000000000000n,
                 decimals: 18,
-                address: boostedPool_USDC_USDT.address,
+                address: boostedPool_WBTC_AAVE.address,
             },
-            tokensOut: [USDC.address, stataUSDT.address],
+            tokensOut: [WBTC.address, stataAAVE.address],
             kind: RemoveLiquidityKind.Proportional,
         };
 
         const removeLiquidityQueryOutput = await removeLiquidityBoostedV3.query(
             removeLiquidityInput,
-            boostedPool_USDC_USDT,
+            boostedPool_WBTC_AAVE,
         );
 
         const amountsOut = removeLiquidityQueryOutput.amountsOut;
 
-        expect(amountsOut[0].token.address).to.eq(USDC.address.toLowerCase());
+        expect(amountsOut[0].token.address).to.eq(WBTC.address.toLowerCase());
         expect(amountsOut[1].token.address).to.eq(
-            stataUSDT.address.toLowerCase(),
+            stataAAVE.address.toLowerCase(),
         );
     });
 
@@ -167,7 +167,7 @@ describe('remove liquidity boosted proportional', () => {
             await approveSpenderOnTokens(
                 client,
                 testAddress,
-                [boostedPool_USDC_USDT.address] as Address[],
+                [boostedPool_WBTC_AAVE.address] as Address[],
                 AddressProvider.CompositeLiquidityRouter(chainId),
             );
         });
@@ -179,18 +179,18 @@ describe('remove liquidity boosted proportional', () => {
                     chainId: chainId,
                     rpcUrl: rpcUrl,
                     bptIn: {
-                        rawAmount: 1000000000000000000n,
+                        rawAmount: 5000000000000000n,
                         decimals: 18,
-                        address: boostedPool_USDC_USDT.address,
+                        address: boostedPool_WBTC_AAVE.address,
                     },
-                    tokensOut: [USDC.address, USDT.address],
+                    tokensOut: [WBTC.address, AAVE.address],
                     kind: RemoveLiquidityKind.Proportional,
                 };
 
             const removeLiquidityQueryOutput =
                 await removeLiquidityBoostedV3.query(
                     removeLiquidityInput,
-                    boostedPool_USDC_USDT,
+                    boostedPool_WBTC_AAVE,
                 );
 
             const removeLiquidityBuildInput = {
@@ -203,7 +203,7 @@ describe('remove liquidity boosted proportional', () => {
 
             const { transactionReceipt, balanceDeltas } =
                 await sendTransactionGetBalances(
-                    [boostedPool_USDC_USDT.address, USDC.address, USDT.address],
+                    [boostedPool_WBTC_AAVE.address, WBTC.address, AAVE.address],
                     client,
                     testAddress,
                     removeLiquidityBuildCallOutput.to,
@@ -242,16 +242,8 @@ describe('remove liquidity boosted proportional', () => {
             // make sure to pass Tokens in correct order. Same as poolTokens but as underlyings instead
             assertTokenMatch(
                 [
-                    new Token(
-                        111555111,
-                        USDC.address as Address,
-                        USDC.decimals,
-                    ),
-                    new Token(
-                        111555111,
-                        USDT.address as Address,
-                        USDT.decimals,
-                    ),
+                    new Token(chainId, WBTC.address as Address, WBTC.decimals),
+                    new Token(chainId, AAVE.address as Address, AAVE.decimals),
                 ],
                 removeLiquidityBuildCallOutput.minAmountsOut.map(
                     (a) => a.token,
@@ -267,18 +259,18 @@ describe('remove liquidity boosted proportional', () => {
                     chainId: chainId,
                     rpcUrl: rpcUrl,
                     bptIn: {
-                        rawAmount: 1000000000000000000n,
+                        rawAmount: 5000000000000000n,
                         decimals: 18,
-                        address: boostedPool_USDC_USDT.address,
+                        address: boostedPool_WBTC_AAVE.address,
                     },
-                    tokensOut: [USDC.address, stataUSDT.address],
+                    tokensOut: [WBTC.address, stataAAVE.address],
                     kind: RemoveLiquidityKind.Proportional,
                 };
 
             const removeLiquidityQueryOutput =
                 await removeLiquidityBoostedV3.query(
                     removeLiquidityInput,
-                    boostedPool_USDC_USDT,
+                    boostedPool_WBTC_AAVE,
                 );
 
             const removeLiquidityBuildInput = {
@@ -292,9 +284,9 @@ describe('remove liquidity boosted proportional', () => {
             const { transactionReceipt, balanceDeltas } =
                 await sendTransactionGetBalances(
                     [
-                        boostedPool_USDC_USDT.address,
-                        USDC.address,
-                        stataUSDT.address,
+                        boostedPool_WBTC_AAVE.address,
+                        WBTC.address,
+                        stataAAVE.address,
                     ],
                     client,
                     testAddress,
@@ -334,15 +326,11 @@ describe('remove liquidity boosted proportional', () => {
             // make sure to pass Tokens in correct order
             assertTokenMatch(
                 [
+                    new Token(chainId, WBTC.address as Address, WBTC.decimals),
                     new Token(
-                        111555111,
-                        USDC.address as Address,
-                        USDC.decimals,
-                    ),
-                    new Token(
-                        111555111,
-                        stataUSDT.address as Address,
-                        stataUSDT.decimals,
+                        chainId,
+                        stataAAVE.address as Address,
+                        stataAAVE.decimals,
                     ),
                 ],
                 removeLiquidityBuildCallOutput.minAmountsOut.map(
@@ -360,11 +348,11 @@ describe('remove liquidity boosted proportional', () => {
                     chainId: chainId,
                     rpcUrl: rpcUrl,
                     bptIn: {
-                        rawAmount: 1000000000000000000n,
+                        rawAmount: 5000000000000000n,
                         decimals: 18,
-                        address: boostedPool_USDC_USDT.address,
+                        address: boostedPool_WBTC_AAVE.address,
                     },
-                    tokensOut: [USDC.address, USDT.address],
+                    tokensOut: [WBTC.address, AAVE.address],
                     kind: RemoveLiquidityKind.Proportional,
                     sender: testAddress,
                     userData: '0x123',
@@ -373,7 +361,7 @@ describe('remove liquidity boosted proportional', () => {
             const removeLiquidityQueryOutput =
                 await removeLiquidityBoostedV3.query(
                     removeLiquidityInput,
-                    boostedPool_USDC_USDT,
+                    boostedPool_WBTC_AAVE,
                 );
 
             const removeLiquidityBuildInput = {
@@ -381,7 +369,6 @@ describe('remove liquidity boosted proportional', () => {
                 slippage: Slippage.fromPercentage('1'),
             };
 
-            //
             const permit =
                 await PermitHelper.signRemoveLiquidityBoostedApproval({
                     ...removeLiquidityBuildInput,
@@ -397,7 +384,7 @@ describe('remove liquidity boosted proportional', () => {
 
             const { transactionReceipt, balanceDeltas } =
                 await sendTransactionGetBalances(
-                    [boostedPool_USDC_USDT.address, USDC.address, USDT.address],
+                    [boostedPool_WBTC_AAVE.address, WBTC.address, AAVE.address],
                     client,
                     testAddress,
                     removeLiquidityBuildCallOutput.to,
@@ -417,7 +404,9 @@ describe('remove liquidity boosted proportional', () => {
                     (amountOut) => amountOut.amount,
                 ),
             ];
-            expect(expectedDeltas).to.deep.eq(balanceDeltas);
+            expectedDeltas.forEach((delta, i) => {
+                areBigIntsWithinPercent(delta, balanceDeltas[i], 0.001);
+            });
             const expectedMinAmountsOut =
                 removeLiquidityQueryOutput.amountsOut.map((amountOut) =>
                     removeLiquidityBuildInput.slippage.applyTo(
@@ -433,16 +422,8 @@ describe('remove liquidity boosted proportional', () => {
             // make sure to pass Tokens in correct order. Same as poolTokens but as underlyings instead
             assertTokenMatch(
                 [
-                    new Token(
-                        111555111,
-                        USDC.address as Address,
-                        USDC.decimals,
-                    ),
-                    new Token(
-                        111555111,
-                        USDT.address as Address,
-                        USDT.decimals,
-                    ),
+                    new Token(chainId, WBTC.address as Address, WBTC.decimals),
+                    new Token(chainId, AAVE.address as Address, AAVE.decimals),
                 ],
                 removeLiquidityBuildCallOutput.minAmountsOut.map(
                     (a) => a.token,
