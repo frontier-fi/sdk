@@ -596,7 +596,7 @@ export class SwapV3 implements SwapBase {
                     };
                 });
             } else {
-                // always use the 'natural' order; (Unlike V2 where order was reversed)
+                // always use the 'natural' order
                 swaps = [] as SwapPathExactAmountOut[];
                 swaps = paths.map((p) => {
                     return {

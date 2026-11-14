@@ -10,18 +10,6 @@ export const missingParameterError = (
         suggestion,
     );
 
-export const exceedingParameterError = (
-    action: string,
-    param: string,
-    protocolVersion: number,
-    suggestion?: string,
-) =>
-    inputValidationError(
-        action,
-        `${action} input exceeding parameter ${param} for Frontier v${protocolVersion}`,
-        suggestion,
-    );
-
 export const protocolVersionError = (
     action: string,
     protocolVersion: number,
@@ -30,17 +18,6 @@ export const protocolVersionError = (
     inputValidationError(
         action,
         `${action} not supported for protocol version ${protocolVersion}.`,
-        suggestion,
-    );
-
-export const poolTypeError = (
-    action: string,
-    poolType: string,
-    suggestion?: string,
-) =>
-    inputValidationError(
-        action,
-        `${action} not supported for pool type ${poolType}.`,
         suggestion,
     );
 

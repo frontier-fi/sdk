@@ -14,7 +14,7 @@ import {
 } from './types';
 import { InputValidator } from '../inputValidator/inputValidator';
 import { Address } from 'viem';
-import { exceedingParameterError, protocolVersionError } from '@/utils';
+import { protocolVersionError } from '@/utils';
 
 export * from './types';
 export * from './paths';
@@ -74,9 +74,6 @@ export class Swap {
     buildCall(
         input: SwapBuildCallInput,
     ): SwapBuildOutputExactIn | SwapBuildOutputExactOut {
-        if ('sender' in input || 'recipient' in input) {
-            throw exceedingParameterError('Swap', 'sender/recipient', 3);
-        }
         return this.swap.buildCall(input);
     }
 

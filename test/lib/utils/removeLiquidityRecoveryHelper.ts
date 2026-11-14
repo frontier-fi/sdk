@@ -141,8 +141,7 @@ export function assertRemoveLiquidityRecovery(
     expect(queryCheck).to.deep.eq(expectedQueryOutput);
 
     removeLiquidityQueryOutput.amountsOut.forEach((a) => {
-        if (a.token.address === poolState.address) expect(a.amount).toEqual(0n);
-        else expect(a.amount > 0n).to.be.true;
+        expect(a.amount > 0n).to.be.true;
     });
 
     if (wethIsEth) {

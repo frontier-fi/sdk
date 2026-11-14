@@ -7,10 +7,9 @@ import { Address, PoolState, ZERO_ADDRESS } from '../../../src';
  */
 export function getTokensForBalanceCheck(poolState: PoolState): Address[] {
     // pool tokens, bpt, eth
-    const tokens = poolState.tokens
-        .filter((t) => t.address !== poolState.address)
-        .map((t) => t.address);
-    tokens.push(poolState.address);
-    tokens.push(ZERO_ADDRESS);
-    return tokens;
+    return [
+        ...poolState.tokens.map((t) => t.address),
+        poolState.address,
+        ZERO_ADDRESS,
+    ];
 }

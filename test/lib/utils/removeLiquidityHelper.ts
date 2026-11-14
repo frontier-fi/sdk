@@ -159,16 +159,12 @@ export function assertRemoveLiquiditySingleTokenExactOut(
         return TokenAmount.fromRawAmount(token, input.rawAmount);
     });
 
-    const tokensWithoutBpt = poolState.tokens.filter(
-        (t) => t.address !== poolState.address,
-    );
-
     const expectedQueryOutput: Omit<RemoveLiquidityQueryOutput, 'bptIn'> & {
         userData: Hex;
     } = {
         to: AddressProvider.Router(chainId),
         amountsOut: expectedAmountsOut,
-        tokenOutIndex: tokensWithoutBpt.findIndex(
+        tokenOutIndex: poolState.tokens.findIndex(
             (t) => t.address === removeLiquidityInput.amountOut.address,
         ),
         poolId: poolState.id,
@@ -229,10 +225,6 @@ export function assertRemoveLiquiditySingleTokenExactIn(
         18,
     );
 
-    const tokensWithoutBpt = poolState.tokens.filter(
-        (t) => t.address !== poolState.address,
-    );
-
     const expectedQueryOutput: Omit<
         RemoveLiquidityQueryOutput,
         'amountsOut'
@@ -244,7 +236,7 @@ export function assertRemoveLiquiditySingleTokenExactIn(
             bptToken,
             removeLiquidityInput.bptIn.rawAmount,
         ),
-        tokenOutIndex: tokensWithoutBpt.findIndex(
+        tokenOutIndex: poolState.tokens.findIndex(
             (t) => t.address === removeLiquidityInput.tokenOut,
         ),
         poolId: poolState.id,
@@ -330,8 +322,7 @@ export function assertRemoveLiquidityProportional(
     expect(queryCheck).to.deep.eq(expectedQueryOutput);
 
     removeLiquidityQueryOutput.amountsOut.forEach((a) => {
-        if (a.token.address === poolState.address) expect(a.amount).toEqual(0n);
-        else expect(a.amount > 0n).to.be.true;
+        expect(a.amount > 0n).to.be.true;
     });
 
     if (wethIsEth) {
@@ -362,7 +353,7 @@ export function assertRemoveLiquidityProportional(
 }
 
 export function assertTokenDeltas(
-    poolState: PoolState,
+    _poolState: PoolState,
     removeLiquidityInput: RemoveLiquidityInput | RemoveLiquidityRecoveryInput,
     removeLiquidityQueryOutput: RemoveLiquidityQueryOutput,
     txOutput: TxOutput,
@@ -370,22 +361,19 @@ export function assertTokenDeltas(
 ) {
     expect(txOutput.transactionReceipt.status).to.eq('success');
 
-    const amountsWithoutBpt = [...removeLiquidityQueryOutput.amountsOut].filter(
-        (t) => t.token.address !== poolState.address,
-    );
-
     const expectedDeltas = [
-        ...amountsWithoutBpt.map((a) => a.amount),
+        ...removeLiquidityQueryOutput.amountsOut.map((a) => a.amount),
         removeLiquidityQueryOutput.bptIn.amount,
         0n,
     ];
 
     if (wethIsEth) {
-        const nativeAssetIndex = amountsWithoutBpt.findIndex((a) =>
-            a.token.isSameAddress(
-                NATIVE_ASSETS[removeLiquidityInput.chainId].wrapped,
-            ),
-        );
+        const nativeAssetIndex =
+            removeLiquidityQueryOutput.amountsOut.findIndex((a) =>
+                a.token.isSameAddress(
+                    NATIVE_ASSETS[removeLiquidityInput.chainId].wrapped,
+                ),
+            );
         expectedDeltas[expectedDeltas.length - 1] =
             expectedDeltas[nativeAssetIndex];
         expectedDeltas[nativeAssetIndex] = 0n;

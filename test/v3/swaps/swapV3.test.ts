@@ -37,9 +37,7 @@ describe('SwapV3', () => {
             const path1hop: Path = {
                 protocolVersion: 3,
                 tokens: [tokens[0], tokens[3]],
-                pools: [
-                    '0xc2aa60465bffa1a88f5ba471a59ca0435c3ec5c100020000000000000000062c',
-                ],
+                pools: ['0xc2aa60465bffa1a88f5ba471a59ca0435c3ec5c1'],
                 inputAmountRaw: 2000000000000000000n,
                 outputAmountRaw: 2000000n,
             };
@@ -47,9 +45,9 @@ describe('SwapV3', () => {
                 protocolVersion: 3,
                 tokens,
                 pools: [
-                    '0xc2aa60465bffa1a88f5ba471a59ca0435c3ec5c100020000000000000000062c',
-                    '0xcb444e90d8198415266c6a2724b7900fb12fc56e000000000000000000000011',
-                    '0x177127622c4a00f3d409b75571e12cb3c8973d3c000000000000000000000011',
+                    '0xc2aa60465bffa1a88f5ba471a59ca0435c3ec5c1',
+                    '0xcb444e90d8198415266c6a2724b7900fb12fc56e',
+                    '0x177127622c4a00f3d409b75571e12cb3c8973d3c',
                 ],
                 inputAmountRaw: 1000000000000000000n,
                 outputAmountRaw: 1000000n,
@@ -164,7 +162,7 @@ describe('SwapV3', () => {
                 tokens,
                 pools: [
                     tokens[0].address,
-                    '0xcb444e90d8198415266c6a2724b7900fb12fc56e000000000000000000000011',
+                    '0xcb444e90d8198415266c6a2724b7900fb12fc56e',
                     tokens[3].address,
                 ],
                 isBuffer: [true, false, true],

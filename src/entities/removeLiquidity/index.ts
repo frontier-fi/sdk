@@ -1,6 +1,5 @@
 import {
     RemoveLiquidityBase,
-    RemoveLiquidityConfig,
     RemoveLiquidityInput,
     RemoveLiquidityKind,
     RemoveLiquidityQueryOutput,
@@ -11,16 +10,10 @@ import { PoolState } from '../types';
 import { InputValidator } from '../inputValidator/inputValidator';
 import { RemoveLiquidityV3 } from './removeLiquidityV3';
 import { Permit } from '../permitHelper';
-import {
-    exceedingParameterError,
-    missingParameterError,
-    protocolVersionError,
-} from '@/utils';
+import { missingParameterError, protocolVersionError } from '@/utils';
 
 export class RemoveLiquidity implements RemoveLiquidityBase {
     private readonly inputValidator: InputValidator = new InputValidator();
-
-    constructor(public config?: RemoveLiquidityConfig) {}
 
     public async query(
         input: RemoveLiquidityInput,
@@ -59,13 +52,6 @@ export class RemoveLiquidity implements RemoveLiquidityBase {
                 'Remove Liquidity buildCall',
                 'userData',
                 3,
-            );
-        }
-        if ('sender' in input || 'recipient' in input) {
-            throw exceedingParameterError(
-                'Remove Liquidity buildCall',
-                'sender or recipient',
-                input.protocolVersion,
             );
         }
         const removeLiquidity = new RemoveLiquidityV3();

@@ -1,9 +1,9 @@
 import { HumanAmount, MinimalToken, PoolTokenWithBalance } from '../data';
-import { Address, Hex } from '../types';
+import { Address } from '../types';
 
 // Returned from API and used as input
 export type PoolState = {
-    id: Hex;
+    id: Address;
     address: Address;
     type: string;
     tokens: MinimalToken[];
@@ -11,7 +11,7 @@ export type PoolState = {
 };
 
 export type PoolStateWithBalances = {
-    id: Hex;
+    id: Address;
     address: Address;
     type: string;
     tokens: PoolTokenWithBalance[];
@@ -28,7 +28,7 @@ export interface PoolTokenWithUnderlyingBalance extends PoolTokenWithBalance {
 }
 
 export type PoolStateWithUnderlyings = {
-    id: Hex;
+    id: Address;
     address: Address;
     type: string;
     tokens: PoolTokenWithUnderlying[];
@@ -36,7 +36,7 @@ export type PoolStateWithUnderlyings = {
 };
 
 export type PoolStateWithUnderlyingBalances = {
-    id: Hex;
+    id: Address;
     address: Address;
     type: string;
     tokens: PoolTokenWithUnderlyingBalance[];
@@ -46,7 +46,6 @@ export type PoolStateWithUnderlyingBalances = {
 
 export type AddLiquidityAmounts = {
     maxAmountsIn: bigint[];
-    maxAmountsInWithoutBpt: bigint[];
     tokenInIndex: number | undefined;
     minimumBpt: bigint;
 };

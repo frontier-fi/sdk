@@ -14,16 +14,11 @@ const NATIVE_ADDRESS: Address = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
 
 export { DECIMAL_SCALES, MAX_UINT256 } from '@frontier-fi/maths';
 
-export const MAX_UINT112 = 5192296858534827628530496329220095n;
-export const PREMINTED_STABLE_BPT = 2596148429267413814265248164610048n; // 2**111
-
 export const STABLE_POOL_CONSTRAINTS = {
     MAX_TOKENS: 5,
     MIN_AMP: 1n,
     MAX_AMP: 5000n,
 };
-
-export const SECONDS_PER_YEAR = 31536000n;
 
 export enum ChainId {
     BASE = 8453,

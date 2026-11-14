@@ -140,7 +140,6 @@ export type AddLiquidityBoostedTxInput = {
     poolStateWithUnderlyings: PoolStateWithUnderlyings;
     testAddress: Address;
     wethIsEth?: boolean;
-    fromInternalBalance?: boolean;
     usePermit2Signatures?: boolean;
 };
 
