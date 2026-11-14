@@ -11,8 +11,7 @@ import { CHAINS, ChainId } from '../../src';
 import { TOKENS } from 'test/lib/utils';
 
 /**
- * V2: All pool operations happen on Mainnet
- * V3: All pool operations happen on Sepolia (pre-launch)
+ * Starts a local Anvil fork for Frontier V3 examples and wraps ETH into WETH for account #0
  */
 
 export const setupExampleFork = async ({ chainId }: { chainId: ChainId }) => {

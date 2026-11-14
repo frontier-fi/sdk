@@ -71,6 +71,12 @@ export const validateTokensRemoveLiquidity = (
                 [poolState.address],
             );
             break;
+        case RemoveLiquidityKind.Recovery:
+            validateTokensRemoveLiquidityRecovery(
+                removeLiquidityInput,
+                poolState,
+            );
+            break;
     }
 };
 

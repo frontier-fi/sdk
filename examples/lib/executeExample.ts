@@ -4,7 +4,8 @@ const executeExample = async (filePath) => {
     const exampleModule = await import(`../../${filePath}`);
     const example = exampleModule.default;
     await example();
-    stopAnvilForks();
+    await stopAnvilForks();
+    process.exit(0);
 };
 
 executeExample(process.argv[2]);

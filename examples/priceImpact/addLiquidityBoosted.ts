@@ -21,18 +21,18 @@ import { ANVIL_NETWORKS, startFork } from 'test/anvil/anvil-global-setup';
 const addLiquidityPriceImpact = async () => {
     const { rpcUrl } = await startFork(ANVIL_NETWORKS.SEPOLIA);
     const chainId = ChainId.SEPOLIA;
-    const poolId = '0x59fa488dda749cdd41772bb068bb23ee955a6d7a';
+    const poolId = '0x8e06ef1a2e854feaee0a83510acd05f8e443fa4f';
 
     const amountsIn = [
         {
-            rawAmount: parseUnits('1', 6),
-            decimals: 6,
-            address: '0x94a9D9AC8a22534E3FaCa9F4e7F2E2cf85d5E4C8' as Address,
+            rawAmount: parseUnits('0.001', 8),
+            decimals: 8,
+            address: '0x29f2d40b0605204364af54ec677bd022da425d03' as Address,
         },
         {
-            rawAmount: parseUnits('1', 6),
-            decimals: 6,
-            address: '0xaA8E23Fb1079EA71e0a56F48a2aA51851D8433D0' as Address,
+            rawAmount: parseUnits('0.2', 18),
+            decimals: 18,
+            address: '0x88541670e55cc00beefd87eb59edd1b7c511ac9a' as Address,
         },
     ];
 

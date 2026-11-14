@@ -2,6 +2,7 @@ import {
     RemoveLiquidityBase,
     RemoveLiquidityConfig,
     RemoveLiquidityInput,
+    RemoveLiquidityKind,
     RemoveLiquidityQueryOutput,
     RemoveLiquidityBuildCallOutput,
     RemoveLiquidityV3BuildCallInput,
@@ -32,7 +33,14 @@ export class RemoveLiquidity implements RemoveLiquidityBase {
                 poolState.protocolVersion,
             );
         }
-        this.inputValidator.validateRemoveLiquidity(input, poolState);
+        if (input.kind === RemoveLiquidityKind.Recovery) {
+            this.inputValidator.validateRemoveLiquidityRecovery(
+                input,
+                poolState,
+            );
+        } else {
+            this.inputValidator.validateRemoveLiquidity(input, poolState);
+        }
         const removeLiquidity = new RemoveLiquidityV3();
         return removeLiquidity.query(input, poolState, block);
     }

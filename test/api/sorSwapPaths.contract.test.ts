@@ -26,6 +26,10 @@ describe('contract: sor swap paths (live API)', () => {
             swapAmount: oneUnit,
         });
         expect(Array.isArray(paths)).toBe(true);
+        expect(paths.length).toBeGreaterThan(0);
+        expect(paths[0].pools.length).toBeGreaterThan(0);
+        expect(paths[0].protocolVersion).toBe(3);
+        expect(paths[0].outputAmountRaw).toBeGreaterThan(0n);
     });
 
     it('fetches SOR swap paths with protocol version', async () => {
@@ -40,5 +44,9 @@ describe('contract: sor swap paths (live API)', () => {
             useProtocolVersion: 3,
         });
         expect(Array.isArray(paths)).toBe(true);
+        expect(paths.length).toBeGreaterThan(0);
+        expect(paths[0].pools.length).toBeGreaterThan(0);
+        expect(paths[0].protocolVersion).toBe(3);
+        expect(paths[0].outputAmountRaw).toBeGreaterThan(0n);
     });
 });

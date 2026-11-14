@@ -8,13 +8,9 @@
 import {
     Address,
     createTestClient,
-    erc20Abi,
-    erc4626Abi,
     http,
-    parseAbi,
-    parseEther,
+    parseUnits,
     publicActions,
-    TestActions,
     walletActions,
 } from 'viem';
 import {
@@ -23,7 +19,6 @@ import {
     Slippage,
     TEST_API_ENDPOINT,
     CHAINS,
-    PublicWalletClient,
     AddLiquidityBufferInput,
     AddLiquidityBufferV3,
     PERMIT2,
@@ -33,6 +28,8 @@ import {
     approveSpenderOnPermit2,
     approveSpenderOnTokens,
     sendTransactionGetBalances,
+    setTokenBalances,
+    TOKENS,
 } from 'test/lib/utils';
 import { AddressProvider } from '@/entities/inputValidator/utils/addressProvider';
 
@@ -41,9 +38,9 @@ async function runAgainstFork() {
     const { rpcUrl } = await startFork(ANVIL_NETWORKS.SEPOLIA);
     const chainId = ChainId.SEPOLIA;
     const wrappedTokenAddress =
-        '0x8a88124522dbbf1e56352ba3de1d9f78c143751e' as Address;
+        '0x131a121bda71ed810bcaf2ac9079214925e59c18' as Address;
     const underlyingTokenAddress =
-        '0x94a9D9AC8a22534E3FaCa9F4e7F2E2cf85d5E4C8' as Address;
+        '0x29f2d40b0605204364af54ec677bd022da425d03' as Address;
     const slippage = Slippage.fromPercentage('1'); // 1%
 
     const client = createTestClient({
@@ -57,16 +54,15 @@ async function runAgainstFork() {
     const userAccount = (await client.getAddresses())[0];
 
     // setup fork token balances
-    const usdcAmount = 1000000000n;
-    await mintUSDC(client, underlyingTokenAddress, userAccount, usdcAmount);
-
-    const depositAmount = usdcAmount / 2n;
-    await depositToStataUSDC(
+    await setTokenBalances(
         client,
         userAccount,
-        underlyingTokenAddress,
-        wrappedTokenAddress,
-        depositAmount,
+        [wrappedTokenAddress, underlyingTokenAddress],
+        [
+            TOKENS[chainId].stataEthWBTC.slot as number,
+            TOKENS[chainId].WBTC.slot as number,
+        ],
+        [parseUnits('1', 8), parseUnits('1', 8)],
     );
 
     // build add liquidity buffer transaction data
@@ -74,7 +70,7 @@ async function runAgainstFork() {
         rpcUrl,
         chainId,
         wrappedTokenAddress,
-        exactSharesToIssue: 1000000n,
+        exactSharesToIssue: 100000n,
         slippage,
     });
 
@@ -180,63 +176,3 @@ export const addLiquidityExample = async ({
 };
 
 export default runAgainstFork;
-
-// helper functions
-
-const mintUSDC = async (
-    client: PublicWalletClient & TestActions,
-    underlyingTokenAddress: Address,
-    userAccount: Address,
-    amount: bigint,
-) => {
-    const usdcOwner = '0xC959483DBa39aa9E78757139af0e9a2EDEb3f42D';
-    await client.setBalance({
-        address: usdcOwner,
-        value: parseEther('1000'),
-    });
-    await client.impersonateAccount({
-        address: usdcOwner,
-    });
-
-    const { request } = await client.simulateContract({
-        abi: parseAbi([
-            'function mint(address account, uint256 value) nonpayable returns (bool)',
-        ]),
-        address: underlyingTokenAddress,
-        account: usdcOwner,
-        functionName: 'mint',
-        args: [userAccount, amount],
-    });
-
-    await client.writeContract(request);
-
-    await client.stopImpersonatingAccount({
-        address: usdcOwner,
-    });
-};
-
-const depositToStataUSDC = async (
-    client: PublicWalletClient & TestActions,
-    userAccount: Address,
-    underlyingTokenAddress: Address,
-    wrappedTokenAddress: Address,
-    depositAmount: bigint,
-) => {
-    await client.writeContract({
-        account: userAccount,
-        address: underlyingTokenAddress,
-        abi: erc20Abi,
-        chain: CHAINS[ChainId.SEPOLIA],
-        functionName: 'approve',
-        args: [wrappedTokenAddress, depositAmount],
-    });
-
-    await client.writeContract({
-        abi: erc4626Abi,
-        address: wrappedTokenAddress,
-        account: userAccount,
-        chain: CHAINS[ChainId.SEPOLIA],
-        functionName: 'deposit',
-        args: [depositAmount, userAccount],
-    });
-};

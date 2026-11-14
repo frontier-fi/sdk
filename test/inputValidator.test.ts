@@ -3,6 +3,7 @@ import {
     AddLiquidityInput,
     AddLiquidityKind,
     PoolState,
+    RemoveLiquidity,
     RemoveLiquidityInput,
     RemoveLiquidityKind,
 } from '@/entities';
@@ -58,8 +59,9 @@ describe('inputValidator', () => {
         warnSpy.mockRestore();
     });
 
-    test('supports recovery, unbalanced add, and single-token remove for GyroE and API ECLP pools while validating pool tokens', () => {
+    test('supports recovery, unbalanced add, and single-token remove for GyroE and API ECLP pools while validating pool tokens', async () => {
         const inputValidator = new InputValidator();
+        const removeLiquidity = new RemoveLiquidity();
 
         for (const poolType of ['ECLP', 'GyroE'] as const) {
             const eclpPoolState: PoolState = {
@@ -98,6 +100,26 @@ describe('inputValidator', () => {
                     eclpPoolState,
                 );
             }).not.toThrow();
+
+            const wrongBptRecoveryInput: RemoveLiquidityInput = {
+                ...recoveryInput,
+                bptIn: {
+                    address: '0x9999999999999999999999999999999999999999',
+                    decimals: 18,
+                    rawAmount: 1000n,
+                },
+            };
+
+            expect(() => {
+                inputValidator.validateRemoveLiquidity(
+                    wrongBptRecoveryInput,
+                    eclpPoolState,
+                );
+            }).toThrowError(/not found in array/);
+
+            await expect(
+                removeLiquidity.query(wrongBptRecoveryInput, eclpPoolState),
+            ).rejects.toThrowError(/not found in array/);
 
             const unbalancedAddInput: AddLiquidityInput = {
                 chainId: ChainId.SEPOLIA,

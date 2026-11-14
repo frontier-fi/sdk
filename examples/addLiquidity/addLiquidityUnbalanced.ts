@@ -5,7 +5,7 @@
  * Run with:
  * pnpm example ./examples/addLiquidity/addLiquidityUnbalanced.ts
  */
-import { Address, parseEther } from 'viem';
+import { Address, parseEther, parseUnits } from 'viem';
 import {
     AddLiquidityInput,
     AddLiquidityKind,
@@ -25,21 +25,21 @@ async function runAgainstFork() {
     const { rpcUrl } = await startFork(ANVIL_NETWORKS.SEPOLIA);
     const chainId = ChainId.SEPOLIA;
     const userAccount = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045';
-    // 50BAL-50WETH
+    // 50USDC-50WETH
     const pool = {
-        id: '0x2ff3b96e0057a1f25f1d62ab800554ccdb268ab8',
-        address: '0x2ff3b96e0057a1f25f1d62ab800554ccdb268ab8' as Address,
+        id: '0xca9f6d682162cca9e0bf3c96de649e372099d89d',
+        address: '0xca9f6d682162cca9e0bf3c96de649e372099d89d' as Address,
     };
     const amountsIn = [
         {
-            rawAmount: parseEther('0.0001'),
-            decimals: 18,
-            address: '0x7b79995e5f793a07bc00c21412e50ecae098e7f9' as Address,
+            rawAmount: parseUnits('1', 6),
+            decimals: 6,
+            address: '0x94a9d9ac8a22534e3faca9f4e7f2e2cf85d5e4c8' as Address,
         },
         {
             rawAmount: parseEther('0.0001'),
             decimals: 18,
-            address: '0xb19382073c7a0addbb56ac6af1808fa49e377b75' as Address,
+            address: '0xfff9976782d46cc05630d1f6ebab18b2324d6b14' as Address,
         },
     ];
     const slippage = Slippage.fromPercentage('1'); // 1%

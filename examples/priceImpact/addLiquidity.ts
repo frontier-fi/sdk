@@ -7,7 +7,7 @@
 import { config } from 'dotenv';
 config();
 
-import { Address, parseEther } from 'viem';
+import { Address, parseEther, parseUnits } from 'viem';
 import {
     AddLiquidityInput,
     AddLiquidityKind,
@@ -16,21 +16,22 @@ import {
     PriceImpact,
     API_ENDPOINT,
 } from 'src';
+import { ANVIL_NETWORKS, startFork } from 'test/anvil/anvil-global-setup';
 
 const addLiquidityPriceImpact = async () => {
-    const rpcUrl = process.env.SEPOLIA_RPC_URL as string;
+    const { rpcUrl } = await startFork(ANVIL_NETWORKS.SEPOLIA);
     const chainId = ChainId.SEPOLIA;
-    const poolId = '0xb790fa0ba5d563b814b0ca1716c414f6b99937b2';
+    const poolId = '0xca9f6d682162cca9e0bf3c96de649e372099d89d';
     const amountsIn = [
         {
-            rawAmount: parseEther('0.01'),
-            decimals: 18,
-            address: '0xb19382073c7A0aDdbb56Ac6AF1808Fa49e377B75' as Address,
+            rawAmount: parseUnits('10', 6),
+            decimals: 6,
+            address: '0x94a9d9ac8a22534e3faca9f4e7f2e2cf85d5e4c8' as Address,
         },
         {
-            rawAmount: parseEther('0.01'),
+            rawAmount: parseEther('0.001'),
             decimals: 18,
-            address: '0x7b79995e5f793a07bc00c21412e50ecae098e7f9' as Address,
+            address: '0xfff9976782d46cc05630d1f6ebab18b2324d6b14' as Address,
         },
     ];
 
