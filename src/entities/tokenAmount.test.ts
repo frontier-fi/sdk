@@ -2,6 +2,7 @@
 
 import {
     ChainId,
+    type FixedPointFunction,
     MathSol,
     NATIVE_ASSETS,
     ONE_36,
@@ -62,7 +63,7 @@ describe('toSignificant & toExact', () => {
     });
 });
 
-describe('maths@0.2.0 primitives & validation', () => {
+describe('maths@0.2.1 primitives & validation', () => {
     it('enforces token equality on add/sub and exact zero ceiling division', () => {
         const a = TokenAmount.fromRawAmount(weth, 100n);
         const otherToken = new Token(
@@ -86,5 +87,30 @@ describe('maths@0.2.0 primitives & validation', () => {
         expect(MathSol.powDownFixed(x, 2n * WAD)).toBe(
             MathSol.mulDownFixed(x, x),
         );
+    });
+
+    it('throws RangeError on zero denominators across MathSol division helpers', () => {
+        expect(() => MathSol.divUp(1n, 0n)).toThrow(RangeError);
+        expect(() => MathSol.divUp(0n, 0n)).toThrow(RangeError);
+        expect(() => MathSol.divDownFixed(1n, 0n)).toThrow(RangeError);
+        expect(() => MathSol.divDownFixed(0n, 0n)).toThrow(RangeError);
+        expect(() => MathSol.divUpFixed(1n, 0n)).toThrow(RangeError);
+        expect(() => MathSol.divUpFixed(0n, 0n)).toThrow(RangeError);
+        expect(() => MathSol.mulDivUpFixed(1n, WAD, 0n)).toThrow(RangeError);
+        expect(() => MathSol.mulDivUpFixed(0n, WAD, 0n)).toThrow(RangeError);
+    });
+
+    it('supports detached MathSol static helpers as FixedPointFunction callbacks', () => {
+        const divideUpFixed: FixedPointFunction = MathSol.divUpFixed;
+        const divideDownFixed: FixedPointFunction = MathSol.divDownFixed;
+        const multiplyUpFixed: FixedPointFunction = MathSol.mulUpFixed;
+        const multiplyDownFixed: FixedPointFunction = MathSol.mulDownFixed;
+        const divideUp: FixedPointFunction = MathSol.divUp;
+
+        expect(divideUpFixed(1n, 2n)).toBe(500000000000000000n);
+        expect(divideDownFixed(1n, 2n)).toBe(500000000000000000n);
+        expect(multiplyUpFixed(2n * WAD, 3n * WAD)).toBe(6n * WAD);
+        expect(multiplyDownFixed(2n * WAD, 3n * WAD)).toBe(6n * WAD);
+        expect(divideUp(5n, 2n)).toBe(3n);
     });
 });
