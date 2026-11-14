@@ -8,9 +8,13 @@
 import {
     Address,
     createTestClient,
+    erc20Abi,
+    erc4626Abi,
     http,
-    parseUnits,
+    parseAbi,
+    parseEther,
     publicActions,
+    TestActions,
     walletActions,
 } from 'viem';
 import {
@@ -19,6 +23,7 @@ import {
     Slippage,
     TEST_API_ENDPOINT,
     CHAINS,
+    PublicWalletClient,
     AddLiquidityBufferInput,
     AddLiquidityBufferV3,
     PERMIT2,
@@ -28,8 +33,6 @@ import {
     approveSpenderOnPermit2,
     approveSpenderOnTokens,
     sendTransactionGetBalances,
-    setTokenBalances,
-    TOKENS,
 } from 'test/lib/utils';
 import { AddressProvider } from '@/entities/inputValidator/utils/addressProvider';
 
@@ -54,15 +57,16 @@ async function runAgainstFork() {
     const userAccount = (await client.getAddresses())[0];
 
     // setup fork token balances
-    await setTokenBalances(
+    const wbtcAmount = 100000000n;
+    await mintWBTC(client, underlyingTokenAddress, userAccount, wbtcAmount);
+
+    const depositAmount = wbtcAmount / 2n;
+    await depositToStataWBTC(
         client,
         userAccount,
-        [wrappedTokenAddress, underlyingTokenAddress],
-        [
-            TOKENS[chainId].stataEthWBTC.slot as number,
-            TOKENS[chainId].WBTC.slot as number,
-        ],
-        [parseUnits('1', 8), parseUnits('1', 8)],
+        underlyingTokenAddress,
+        wrappedTokenAddress,
+        depositAmount,
     );
 
     // build add liquidity buffer transaction data
@@ -70,7 +74,7 @@ async function runAgainstFork() {
         rpcUrl,
         chainId,
         wrappedTokenAddress,
-        exactSharesToIssue: 100000n,
+        exactSharesToIssue: 1000000n,
         slippage,
     });
 
@@ -176,3 +180,63 @@ export const addLiquidityExample = async ({
 };
 
 export default runAgainstFork;
+
+// helper functions
+
+const mintWBTC = async (
+    client: PublicWalletClient & TestActions,
+    underlyingTokenAddress: Address,
+    userAccount: Address,
+    amount: bigint,
+) => {
+    const wbtcOwner = '0xC959483DBa39aa9E78757139af0e9a2EDEb3f42D';
+    await client.setBalance({
+        address: wbtcOwner,
+        value: parseEther('1000'),
+    });
+    await client.impersonateAccount({
+        address: wbtcOwner,
+    });
+
+    const { request } = await client.simulateContract({
+        abi: parseAbi([
+            'function mint(address account, uint256 value) nonpayable returns (bool)',
+        ]),
+        address: underlyingTokenAddress,
+        account: wbtcOwner,
+        functionName: 'mint',
+        args: [userAccount, amount],
+    });
+
+    await client.writeContract(request);
+
+    await client.stopImpersonatingAccount({
+        address: wbtcOwner,
+    });
+};
+
+const depositToStataWBTC = async (
+    client: PublicWalletClient & TestActions,
+    userAccount: Address,
+    underlyingTokenAddress: Address,
+    wrappedTokenAddress: Address,
+    depositAmount: bigint,
+) => {
+    await client.writeContract({
+        account: userAccount,
+        address: underlyingTokenAddress,
+        abi: erc20Abi,
+        chain: CHAINS[ChainId.SEPOLIA],
+        functionName: 'approve',
+        args: [wrappedTokenAddress, depositAmount],
+    });
+
+    await client.writeContract({
+        abi: erc4626Abi,
+        address: wrappedTokenAddress,
+        account: userAccount,
+        chain: CHAINS[ChainId.SEPOLIA],
+        functionName: 'deposit',
+        args: [depositAmount, userAccount],
+    });
+};
