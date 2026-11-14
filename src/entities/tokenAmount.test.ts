@@ -78,6 +78,11 @@ describe('maths@0.2.1 primitives & validation', () => {
         expect(TokenAmount.fromRawAmount(weth, 0n).mulUpFixed(WAD).amount).toBe(
             0n,
         );
+
+        const neg = TokenAmount.fromRawAmount(weth, -1234567n);
+        const half = WAD / 2n;
+        expect(neg.mulDownFixed(half).amount).toBe(-617284n);
+        expect(neg.mulUpFixed(half).amount).toBe(-617283n);
     });
 
     it('exports corrected RAY (1e27), ONE_36 (1e36), and MathSol.powDownFixed rounding', () => {
