@@ -3,42 +3,14 @@ export type Hex = `0x${string}`;
 export type BigintIsh = bigint | string | number;
 
 export enum PoolType {
-    AaveLinear = 'AaveLinear',
-    ComposableStable = 'ComposableStable',
-    CowAmm = 'CowAmm',
-    Fx = 'FX',
-    Gyro2 = 'Gyro2',
-    Gyro3 = 'Gyro3',
     GyroE = 'GyroE',
-    MetaStable = 'MetaStable',
     Stable = 'Stable',
-    StableSurge = 'StableSurge',
     Weighted = 'Weighted',
-    ReClamm = 'ReClamm',
-    LiquidityBootstrapping = 'LiquidityBootstrapping',
-    LiquidityBootstrappingFixedPrice = 'LiquidityBootstrappingFixedPrice',
 }
 
 export enum SwapKind {
     GivenIn = 0,
     GivenOut = 1,
-}
-
-export interface SingleSwap {
-    poolId: Hex;
-    kind: SwapKind;
-    assetIn: Address;
-    assetOut: Address;
-    amount: bigint;
-    userData: Hex;
-}
-
-export interface BatchSwapStep {
-    poolId: Hex;
-    assetInIndex: bigint;
-    assetOutIndex: bigint;
-    amount: bigint;
-    userData: Hex;
 }
 
 export type InputToken = {

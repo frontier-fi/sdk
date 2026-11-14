@@ -1,6 +1,6 @@
 import { createPublicClient, Hex, http } from 'viem';
 import { ChainId, CHAINS } from '@/utils';
-import { balancerRouterAbiExtended } from '@/abi';
+import { frontierRouterAbiExtended } from '@/abi';
 import { Address } from '@/types';
 import { AddressProvider } from '@/entities/inputValidator/utils/addressProvider';
 
@@ -20,7 +20,7 @@ export const doAddLiquidityUnbalancedQuery = async (
 
     const { result: bptAmountOut } = await client.simulateContract({
         address: AddressProvider.Router(chainId),
-        abi: balancerRouterAbiExtended,
+        abi: frontierRouterAbiExtended,
         functionName: 'queryAddLiquidityUnbalanced',
         args: [poolAddress, maxAmountsIn, sender, userData],
         blockNumber: block,

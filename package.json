@@ -29,7 +29,6 @@
         "test": "vitest dev",
         "test:all": "vitest run",
         "test:no-integration": "vitest run --exclude \"**/*.integration.test.ts\" --exclude \"**/*.contract.test.ts\"",
-        "test:no-v2": "vitest run --exclude \"test/v2/**\"",
         "test:release": "vitest run --config vitest.release.config.mts",
         "changeset": "changeset",
         "changeset:version": "changeset version",

@@ -35,6 +35,8 @@ jobs:
           assert.deepEqual(Object.keys(esm).sort(), Object.keys(cjs).sort());
           for (const sdk of [esm, cjs]) {
             assert.equal(typeof sdk.Swap, 'function');
+            assert.equal(typeof sdk.FrontierApi, 'function');
+            assert.equal(typeof sdk.frontierContracts, 'object');
             assert.equal(typeof sdk.PriceImpact.addLiquidityUnbalanced, 'function');
           }
           JS

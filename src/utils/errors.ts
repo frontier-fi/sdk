@@ -6,7 +6,7 @@ export const missingParameterError = (
 ) =>
     inputValidationError(
         action,
-        `${action} input missing parameter ${param} for Balancer v${protocolVersion}`,
+        `${action} input missing parameter ${param} for Frontier v${protocolVersion}`,
         suggestion,
     );
 
@@ -18,7 +18,7 @@ export const exceedingParameterError = (
 ) =>
     inputValidationError(
         action,
-        `${action} input exceeding parameter ${param} for Balancer v${protocolVersion}`,
+        `${action} input exceeding parameter ${param} for Frontier v${protocolVersion}`,
         suggestion,
     );
 
@@ -29,7 +29,7 @@ export const protocolVersionError = (
 ) =>
     inputValidationError(
         action,
-        `${action} not supported for Balancer v${protocolVersion}.`,
+        `${action} not supported for protocol version ${protocolVersion}.`,
         suggestion,
     );
 
@@ -52,7 +52,7 @@ export const poolTypeProtocolVersionError = (
 ) =>
     inputValidationError(
         action,
-        `${action} not supported for pool type ${poolType} on Balancer v${protocolVersion}.`,
+        `${action} not supported for pool type ${poolType} on Frontier v${protocolVersion}.`,
         suggestion,
     );
 

@@ -50,13 +50,6 @@ export const validateTokensRemoveLiquidity = (
     poolState: PoolState,
 ) => {
     switch (removeLiquidityInput.kind) {
-        case RemoveLiquidityKind.Unbalanced:
-            areTokensInArray(
-                'Remove Liquidity Unbalanced',
-                removeLiquidityInput.amountsOut.map((a) => a.address),
-                poolState.tokens.map((t) => t.address),
-            );
-            break;
         case RemoveLiquidityKind.SingleTokenExactOut:
             areTokensInArray(
                 'Remove Liquidity Single Token Exact Out',
@@ -78,6 +71,12 @@ export const validateTokensRemoveLiquidity = (
                 [poolState.address],
             );
             break;
+        case RemoveLiquidityKind.Recovery:
+            validateTokensRemoveLiquidityRecovery(
+                removeLiquidityInput,
+                poolState,
+            );
+            break;
     }
 };
 
@@ -90,17 +89,6 @@ export const validateTokensRemoveLiquidityRecovery = (
         [removeLiquidityRecoveryInput.bptIn.address],
         [poolState.address],
     );
-};
-
-export const validatePoolHasBpt = (action: string, poolState: PoolState) => {
-    const { tokens, address } = poolState;
-    const bptIndex = tokens.findIndex((t) => t.address === address);
-    if (bptIndex < 0) {
-        throw inputValidationError(
-            action,
-            'poolState should have BPT token included for Composable Stable pools',
-        );
-    }
 };
 
 export const validateCreatePoolTokens = (tokens: { address: string }[]) => {
@@ -120,7 +108,7 @@ export const validateTokensAddLiquidityBoosted = (
     addLiquidityInput: AddLiquidityBoostedInput,
     poolState: PoolStateWithUnderlyings,
 ) => {
-    //check if poolState.protocolVersion is 3
+    // check if poolState.protocolVersion is 3
     if (poolState.protocolVersion !== 3) {
         throw protocolVersionError(
             'Add Liquidity Boosted',

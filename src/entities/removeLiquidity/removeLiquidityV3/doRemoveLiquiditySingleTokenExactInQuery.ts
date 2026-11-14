@@ -1,4 +1,4 @@
-import { balancerRouterAbiExtended } from '@/abi';
+import { frontierRouterAbiExtended } from '@/abi';
 import { ChainId, CHAINS } from '@/utils';
 import { createPublicClient, Hex, http } from 'viem';
 import { Address } from '@/types';
@@ -20,7 +20,7 @@ export const doRemoveLiquiditySingleTokenExactInQuery = async (
     });
     const { result: amountOut } = await client.simulateContract({
         address: AddressProvider.Router(chainId),
-        abi: balancerRouterAbiExtended,
+        abi: frontierRouterAbiExtended,
         functionName: 'queryRemoveLiquiditySingleTokenExactIn',
         args: [poolAddress, exactBptAmountIn, tokenOut, sender, userData],
         blockNumber: block,

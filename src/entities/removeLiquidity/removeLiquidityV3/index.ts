@@ -3,7 +3,6 @@ import { TokenAmount } from '@/entities/tokenAmount';
 import { PoolState } from '@/entities/types';
 import { getSortedTokens } from '@/entities/utils';
 import { Hex } from '@/types';
-import { balancerV3Contracts, protocolVersionError } from '@/utils';
 
 import { getAmountsCall, getAmountsQuery } from '../helper';
 import {
@@ -23,7 +22,7 @@ import { encodeRemoveLiquiditySingleTokenExactIn } from './encodeRemoveLiquidity
 import { encodeRemoveLiquidityProportional } from './encodeRemoveLiquidityProportional';
 import { encodeRemoveLiquidityRecovery } from './encodeRemoveLiquidityRecovery';
 import { encodeFunctionData, zeroAddress } from 'viem';
-import { balancerRouterAbiExtended } from '@/abi';
+import { frontierRouterAbiExtended } from '@/abi';
 import { Permit } from '@/entities/permitHelper';
 
 import { AddressProvider } from '@/entities/inputValidator/utils/addressProvider';
@@ -41,11 +40,6 @@ export class RemoveLiquidityV3 implements RemoveLiquidityBase {
         let minAmountsOut: readonly bigint[];
 
         switch (input.kind) {
-            case RemoveLiquidityKind.Unbalanced:
-                throw protocolVersionError(
-                    'Remove Liquidity Unbalanced',
-                    poolState.protocolVersion,
-                );
             case RemoveLiquidityKind.SingleTokenExactOut:
                 {
                     maxBptAmountIn =
@@ -135,11 +129,6 @@ export class RemoveLiquidityV3 implements RemoveLiquidityBase {
 
         let callData: Hex;
         switch (input.removeLiquidityKind) {
-            case RemoveLiquidityKind.Unbalanced:
-                throw protocolVersionError(
-                    'Remove Liquidity Unbalanced',
-                    input.protocolVersion,
-                );
             case RemoveLiquidityKind.SingleTokenExactOut:
                 {
                     callData = encodeRemoveLiquiditySingleTokenExactOut(
@@ -203,7 +192,7 @@ export class RemoveLiquidityV3 implements RemoveLiquidityBase {
         ] as const;
 
         const callData = encodeFunctionData({
-            abi: balancerRouterAbiExtended,
+            abi: frontierRouterAbiExtended,
             functionName: 'permitBatchAndCall',
             args,
         });

@@ -6,18 +6,30 @@ import {
     createTestClient,
     http,
     parseEther,
+    parseUnits,
     publicActions,
     walletActions,
     TestActions,
     Hex,
+    zeroAddress,
 } from 'viem';
 import {
+    AddLiquidity,
+    AddLiquidityKind,
     CHAINS,
     ChainId,
+    CreatePoolV3WeightedInput,
+    InitPool,
+    InitPoolDataProvider,
+    Permit2Helper,
+    PoolState,
+    PoolType,
+    Slippage,
     SwapKind,
     Swap,
     PERMIT2,
     PublicWalletClient,
+    TokenType,
 } from '@/index';
 import { Path } from '@/entities/swap/paths/types';
 import { AddressProvider } from '@/entities/inputValidator/utils/addressProvider';
@@ -25,8 +37,10 @@ import { AddressProvider } from '@/entities/inputValidator/utils/addressProvider
 import {
     approveSpenderOnTokens,
     approveTokens,
+    doCreatePool,
+    sendTransactionGetBalances,
     setTokenBalances,
-} from 'test/lib/utils/helper';
+} from 'test/lib/utils';
 import { ANVIL_NETWORKS, startFork } from 'test/anvil/anvil-global-setup';
 import { POOLS, TOKENS } from 'test/lib/utils/addresses';
 import {
@@ -37,15 +51,16 @@ import {
 const protocolVersion = 3;
 const chainId = ChainId.SEPOLIA;
 
-const BAL = TOKENS[chainId].BAL;
 const WETH = TOKENS[chainId].WETH;
 const USDC = TOKENS[chainId].USDC_AAVE;
-const DAI = TOKENS[chainId].DAI_AAVE;
-const USDT = TOKENS[chainId].USDT_AAVE;
-const USDC_DAI_BPT = POOLS[chainId].MOCK_USDC_DAI_POOL;
+const TOK0 = TOKENS[chainId].TOK0;
+const TOK1 = TOKENS[chainId].TOK1;
+const WBTC = TOKENS[chainId].WBTC;
+const AAVE = TOKENS[chainId].AAVE;
+const TOK1_USDC_BPT = POOLS[chainId].MOCK_TOK1_USDC_POOL;
 const boosted_pool = POOLS[chainId].MOCK_BOOSTED_POOL;
-const stataUSDC = TOKENS[chainId].stataUSDC;
-const stataUSDT = TOKENS[chainId].stataUSDT;
+const stataEthWBTC = TOKENS[chainId].stataEthWBTC;
+const stataEthAAVE = TOKENS[chainId].stataEthAAVE;
 
 describe('SwapV3', () => {
     let client: PublicWalletClient & TestActions;
@@ -60,25 +75,224 @@ describe('SwapV3', () => {
     let tokens: Address[];
 
     beforeAll(async () => {
-        // weth [swap] bal
+        const fork = await startFork(ANVIL_NETWORKS.SEPOLIA);
+        rpcUrl = fork.rpcUrl;
+        client = createTestClient({
+            mode: 'anvil',
+            chain: CHAINS[chainId],
+            transport: http(rpcUrl),
+        })
+            .extend(publicActions)
+            .extend(walletActions);
+
+        testAddress = (await client.getAddresses())[0];
+
+        tokens = [
+            WETH.address,
+            TOK0.address,
+            TOK1.address,
+            USDC.address,
+            WBTC.address,
+            AAVE.address,
+        ];
+
+        await setTokenBalances(
+            client,
+            testAddress,
+            tokens,
+            [
+                WETH.slot,
+                TOK0.slot,
+                TOK1.slot,
+                USDC.slot,
+                WBTC.slot,
+                AAVE.slot,
+            ] as number[],
+            [
+                parseEther('100'),
+                parseEther('10000'),
+                parseEther('10000'),
+                parseUnits('100000', USDC.decimals),
+                parseUnits('10', WBTC.decimals),
+                parseEther('1000'),
+            ],
+        );
+
+        await approveSpenderOnTokens(
+            client,
+            testAddress,
+            tokens,
+            PERMIT2[chainId],
+        );
+
+        // Mint MOCK_TOK1_USDC_POOL BPT and deploy/initialize a 50/50 Weighted [BPT, WETH] nested pool
+        // on the Frontier Vault so multi-hop join/exit paths execute against Frontier contracts.
+        const tok1UsdcPoolState: PoolState = {
+            id: TOK1_USDC_BPT.id,
+            address: TOK1_USDC_BPT.address,
+            type: PoolType.Weighted,
+            protocolVersion,
+            tokens: [
+                {
+                    address: TOK1.address,
+                    decimals: TOK1.decimals,
+                    index: 0,
+                },
+                {
+                    address: USDC.address,
+                    decimals: USDC.decimals,
+                    index: 1,
+                },
+            ],
+        };
+        const addLiquidity = new AddLiquidity();
+        const addLiquidityQuery = await addLiquidity.query(
+            {
+                chainId,
+                rpcUrl,
+                kind: AddLiquidityKind.Unbalanced,
+                amountsIn: [
+                    {
+                        address: TOK1.address,
+                        decimals: TOK1.decimals,
+                        rawAmount: parseEther('200'),
+                    },
+                    {
+                        address: USDC.address,
+                        decimals: USDC.decimals,
+                        rawAmount: parseUnits('200', USDC.decimals),
+                    },
+                ],
+            },
+            tok1UsdcPoolState,
+        );
+        const addLiquidityBuildInput = {
+            ...addLiquidityQuery,
+            slippage: Slippage.fromPercentage('1'),
+            chainId,
+            protocolVersion: 3 as const,
+            userData: '0x' as const,
+        };
+        const addPermit2 = await Permit2Helper.signAddLiquidityApproval({
+            ...addLiquidityBuildInput,
+            client,
+            owner: testAddress,
+        });
+        const addCall = addLiquidity.buildCallWithPermit2(
+            addLiquidityBuildInput,
+            addPermit2,
+        );
+        await sendTransactionGetBalances(
+            [TOK1_USDC_BPT.address],
+            client,
+            testAddress,
+            addCall.to,
+            addCall.callData,
+            addCall.value,
+        );
+
+        const createNestedPoolInput: CreatePoolV3WeightedInput = {
+            poolType: PoolType.Weighted,
+            symbol: '50BPT-50WETH',
+            tokens: [
+                {
+                    address: TOK1_USDC_BPT.address,
+                    weight: parseEther('0.5'),
+                    rateProvider: zeroAddress,
+                    tokenType: TokenType.STANDARD,
+                    paysYieldFees: false,
+                },
+                {
+                    address: WETH.address,
+                    weight: parseEther('0.5'),
+                    rateProvider: zeroAddress,
+                    tokenType: TokenType.STANDARD,
+                    paysYieldFees: false,
+                },
+            ],
+            swapFeePercentage: parseEther('0.003'),
+            poolHooksContract: zeroAddress,
+            pauseManager: testAddress,
+            swapFeeManager: testAddress,
+            poolCreator: testAddress,
+            disableUnbalancedLiquidity: false,
+            chainId,
+            protocolVersion,
+            enableDonation: false,
+        };
+        const nestedPoolAddress = (
+            await doCreatePool({
+                client,
+                testAddress,
+                createPoolInput: createNestedPoolInput,
+            })
+        ).toLowerCase() as Address;
+        await approveSpenderOnTokens(
+            client,
+            testAddress,
+            [TOK1_USDC_BPT.address],
+            PERMIT2[chainId],
+        );
+        const initPoolDataProvider = new InitPoolDataProvider(chainId, rpcUrl);
+        const nestedPoolState = await initPoolDataProvider.getInitPoolData(
+            nestedPoolAddress,
+            PoolType.Weighted,
+            protocolVersion,
+        );
+        const initNestedInput = {
+            amountsIn: [
+                {
+                    address: TOK1_USDC_BPT.address,
+                    rawAmount: parseEther('100'),
+                    decimals: TOK1_USDC_BPT.decimals,
+                },
+                {
+                    address: WETH.address,
+                    rawAmount: parseEther('0.1'),
+                    decimals: WETH.decimals,
+                },
+            ],
+            minBptAmountOut: 0n,
+            chainId,
+        };
+        const initPermit2 = await Permit2Helper.signInitPoolApproval({
+            ...initNestedInput,
+            client,
+            owner: testAddress,
+        });
+        const initCall = new InitPool().buildCallWithPermit2(
+            initNestedInput,
+            nestedPoolState,
+            initPermit2,
+        );
+        await sendTransactionGetBalances(
+            [TOK1_USDC_BPT.address, WETH.address],
+            client,
+            testAddress,
+            initCall.to,
+            initCall.callData,
+            initCall.value,
+        );
+
+        // tok0 [swap] weth
         pathBalWeth = {
             protocolVersion,
             tokens: [
                 {
-                    address: BAL.address,
-                    decimals: BAL.decimals,
+                    address: TOK0.address,
+                    decimals: TOK0.decimals,
                 },
                 {
                     address: WETH.address,
                     decimals: WETH.decimals,
                 },
             ],
-            pools: [POOLS[chainId].MOCK_WETH_BAL_POOL.id],
-            inputAmountRaw: 100000000000n,
-            outputAmountRaw: 100000000000n,
+            pools: [POOLS[chainId].MOCK_WETH_TOK0_POOL.id],
+            inputAmountRaw: 100000000000000n,
+            outputAmountRaw: 100000000000000n,
         };
 
-        // weth [swap] bal [swap] dai [swap] usdc
+        // weth [swap] tok0 [swap] tok1 [swap] usdc
         pathMultiSwap = {
             protocolVersion,
             tokens: [
@@ -87,12 +301,12 @@ describe('SwapV3', () => {
                     decimals: WETH.decimals,
                 },
                 {
-                    address: BAL.address,
-                    decimals: BAL.decimals,
+                    address: TOK0.address,
+                    decimals: TOK0.decimals,
                 },
                 {
-                    address: DAI.address,
-                    decimals: DAI.decimals,
+                    address: TOK1.address,
+                    decimals: TOK1.decimals,
                 },
                 {
                     address: USDC.address,
@@ -100,15 +314,15 @@ describe('SwapV3', () => {
                 },
             ],
             pools: [
-                POOLS[chainId].MOCK_WETH_BAL_POOL.id,
-                POOLS[chainId].MOCK_BAL_DAI_POOL.id,
-                POOLS[chainId].MOCK_USDC_DAI_POOL.id,
+                POOLS[chainId].MOCK_WETH_TOK0_POOL.id,
+                POOLS[chainId].MOCK_TOK0_TOK1_POOL.id,
+                POOLS[chainId].MOCK_TOK1_USDC_POOL.id,
             ],
             inputAmountRaw: 100000000000000n,
-            outputAmountRaw: 2000000n,
+            outputAmountRaw: 100000n,
         };
 
-        // usdc [swap] dai [swap] bal [swap] weth
+        // usdc [swap] tok1 [swap] tok0 [swap] weth
         pathUsdcWethMulti = {
             ...pathMultiSwap,
             tokens: [...pathMultiSwap.tokens].reverse(),
@@ -126,20 +340,17 @@ describe('SwapV3', () => {
                     decimals: WETH.decimals,
                 },
                 {
-                    address: USDC_DAI_BPT.address,
-                    decimals: USDC_DAI_BPT.decimals,
+                    address: TOK1_USDC_BPT.address,
+                    decimals: TOK1_USDC_BPT.decimals,
                 },
                 {
                     address: USDC.address,
                     decimals: USDC.decimals,
                 },
             ],
-            pools: [
-                POOLS[chainId].MOCK_NESTED_POOL.id,
-                POOLS[chainId].MOCK_USDC_DAI_POOL.id,
-            ],
+            pools: [nestedPoolAddress, POOLS[chainId].MOCK_TOK1_USDC_POOL.id],
             inputAmountRaw: 100000000000000n,
-            outputAmountRaw: 6000000n,
+            outputAmountRaw: 100000n,
         };
 
         // usdc [join] bpt [swap] weth
@@ -147,37 +358,30 @@ describe('SwapV3', () => {
             ...pathWithExit,
             tokens: [...pathWithExit.tokens].reverse(),
             pools: [...pathWithExit.pools].reverse(),
-            inputAmountRaw: 6000000n,
-            outputAmountRaw: 600000000000000n,
+            inputAmountRaw: 100000n,
+            outputAmountRaw: 40000000000000n,
         };
-
-        const fork = await startFork(ANVIL_NETWORKS.SEPOLIA);
-        rpcUrl = fork.rpcUrl;
-        client = createTestClient({
-            mode: 'anvil',
-            chain: CHAINS[chainId],
-            transport: http(rpcUrl),
-        })
-            .extend(publicActions)
-            .extend(walletActions);
-
-        testAddress = (await client.getAddresses())[0];
-
-        tokens = [WETH.address, BAL.address, USDC.address];
 
         await setTokenBalances(
             client,
             testAddress,
             tokens,
-            [WETH.slot, BAL.slot, USDC.slot] as number[],
-            [parseEther('100'), parseEther('100'), 100000000000n],
-        );
-
-        await approveSpenderOnTokens(
-            client,
-            testAddress,
-            tokens,
-            PERMIT2[chainId],
+            [
+                WETH.slot,
+                TOK0.slot,
+                TOK1.slot,
+                USDC.slot,
+                WBTC.slot,
+                AAVE.slot,
+            ] as number[],
+            [
+                parseEther('100'),
+                parseEther('10000'),
+                parseEther('10000'),
+                parseUnits('100000', USDC.decimals),
+                parseUnits('10', WBTC.decimals),
+                parseEther('1000'),
+            ],
         );
 
         // Uses Special RPC methods to revert state back to same snapshot for each test
@@ -756,31 +960,31 @@ describe('SwapV3', () => {
 
     describe('boosted', () => {
         describe('multi-hop swap', () => {
-            // USDC[wrap]aUSDC[swap]aUSDT[unwrap]USDT
+            // WBTC[wrap]stataEthWBTC[swap]stataEthAAVE[unwrap]AAVE
             const pathWithBuffers = {
                 protocolVersion: 3,
                 tokens: [
                     {
-                        address: USDC.address,
-                        decimals: USDC.decimals,
+                        address: WBTC.address,
+                        decimals: WBTC.decimals,
                     },
                     {
-                        address: stataUSDC.address,
-                        decimals: stataUSDC.decimals,
+                        address: stataEthWBTC.address,
+                        decimals: stataEthWBTC.decimals,
                     },
                     {
-                        address: stataUSDT.address,
-                        decimals: stataUSDT.decimals,
+                        address: stataEthAAVE.address,
+                        decimals: stataEthAAVE.decimals,
                     },
                     {
-                        address: USDT.address,
-                        decimals: USDT.decimals,
+                        address: AAVE.address,
+                        decimals: AAVE.decimals,
                     },
                 ],
                 pools: [
-                    stataUSDC.address,
+                    stataEthWBTC.address,
                     boosted_pool.address,
-                    stataUSDT.address,
+                    stataEthAAVE.address,
                 ],
                 isBuffer: [true, false, true],
             };
@@ -800,7 +1004,7 @@ describe('SwapV3', () => {
                         paths: [
                             {
                                 ...pathWithBuffers,
-                                inputAmountRaw: 100000000n,
+                                inputAmountRaw: 100000n,
                                 outputAmountRaw: 0n,
                             } as Path,
                         ],
@@ -827,7 +1031,7 @@ describe('SwapV3', () => {
                             {
                                 ...pathWithBuffers,
                                 inputAmountRaw: 0n,
-                                outputAmountRaw: 10000000n,
+                                outputAmountRaw: 100000000000000000n,
                             } as Path,
                         ],
                         swapKind: SwapKind.GivenOut,

@@ -7,17 +7,7 @@ export default defineConfig(({ mode }) => {
 
     return {
         define: {
-            'process.env.ETHEREUM_RPC_URL': JSON.stringify(
-                env.ETHEREUM_RPC_URL,
-            ),
-            'process.env.POLYGON_RPC_URL': JSON.stringify(env.POLYGON_RPC_URL),
-            'process.env.ARBITRUM_RPC_URL': JSON.stringify(
-                env.ARBITRUM_RPC_URL,
-            ),
-            'process.env.FANTOM_RPC_URL': JSON.stringify(env.FANTOM_RPC_URL),
-            'process.env.OPTIMISM_RPC_URL': JSON.stringify(
-                env.OPTIMISM_RPC_URL,
-            ),
+            'process.env.SEPOLIA_RPC_URL': JSON.stringify(env.SEPOLIA_RPC_URL),
             'process.env.SKIP_GLOBAL_SETUP': JSON.stringify(
                 env.SKIP_GLOBAL_SETUP,
             ),
@@ -28,14 +18,9 @@ export default defineConfig(({ mode }) => {
             setupFiles: ['/test/vitest-setup.ts'],
             globals: true,
             pool: 'forks',
-            // Limit concurrent forks to avoid overwhelming RPC providers with too many connections
+            // Limit concurrent workers to avoid overwhelming RPC providers with too many connections
             // Each fork creates its own Anvil instance which makes RPC calls
-            poolOptions: {
-                forks: {
-                    maxForks: 3,
-                    minForks: 1,
-                },
-            },
+            maxWorkers: 2,
             // Uncomment to debug suite excluding some tests
             // exclude: ['test/*weighted*.integration.*', 'node_modules', 'dist'],
             // Uncomment to run integration tests sequentially

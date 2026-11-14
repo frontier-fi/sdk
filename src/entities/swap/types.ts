@@ -2,7 +2,6 @@ import { TokenAmount } from '../tokenAmount';
 import { Slippage } from '../..';
 import { SwapKind } from '../../types';
 import { Address, Hex } from 'viem';
-import { SwapBuildCallInputBaseV2 } from './swaps/v2';
 import { Path } from './paths/types';
 
 export type SwapInput = {
@@ -19,9 +18,7 @@ export type SwapBuildCallInputBase = {
     queryOutput: ExactInQueryOutput | ExactOutQueryOutput;
 };
 
-export type SwapBuildCallInput =
-    | SwapBuildCallInputBase
-    | (SwapBuildCallInputBase & SwapBuildCallInputBaseV2);
+export type SwapBuildCallInput = SwapBuildCallInputBase;
 
 type SwapBuildOutputBase = {
     to: Address;

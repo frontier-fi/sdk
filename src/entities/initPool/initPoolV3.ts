@@ -1,8 +1,7 @@
-import { balancerRouterAbiExtended } from '@/abi';
+import { frontierRouterAbiExtended } from '@/abi';
 import { PoolState } from '../types';
 import { InitPoolBase, InitPoolBuildOutput, InitPoolInputV3 } from './types';
-import { balancerV3Contracts } from '@/utils';
-import { encodeFunctionData, Address } from 'viem';
+import { encodeFunctionData } from 'viem';
 import { getSortedTokens, parseInitializeArgs, getAmounts } from '../utils';
 import { Token } from '../token';
 import { TokenAmount } from '../tokenAmount';
@@ -24,7 +23,7 @@ export class InitPoolV3 implements InitPoolBase {
         });
 
         const callData = encodeFunctionData({
-            abi: balancerRouterAbiExtended,
+            abi: frontierRouterAbiExtended,
             functionName: 'initialize',
             args,
         });
@@ -57,7 +56,7 @@ export class InitPoolV3 implements InitPoolBase {
         ] as const;
 
         const callData = encodeFunctionData({
-            abi: balancerRouterAbiExtended,
+            abi: frontierRouterAbiExtended,
             functionName: 'permitBatchAndCall',
             args,
         });

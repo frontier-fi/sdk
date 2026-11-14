@@ -1,12 +1,27 @@
 import { BufferState } from '@/entities';
+import { ChainId } from '@/utils';
+import { TOKENS } from 'test/lib/utils';
 
-export const bufferState_USDC_stataUSDC: BufferState = {
+const chainId = ChainId.SEPOLIA;
+
+export const bufferState_WBTC_stataEthWBTC: BufferState = {
     wrappedToken: {
-        address: '0x8a88124522dbbf1e56352ba3de1d9f78c143751e',
-        decimals: 6,
+        address: TOKENS[chainId].stataEthWBTC.address,
+        decimals: TOKENS[chainId].stataEthWBTC.decimals,
     },
     underlyingToken: {
-        address: '0x94a9D9AC8a22534E3FaCa9F4e7F2E2cf85d5E4C8',
-        decimals: 6,
+        address: TOKENS[chainId].WBTC.address,
+        decimals: TOKENS[chainId].WBTC.decimals,
+    },
+};
+
+export const bufferState_AAVE_stataEthAAVE: BufferState = {
+    wrappedToken: {
+        address: TOKENS[chainId].stataEthAAVE.address,
+        decimals: TOKENS[chainId].stataEthAAVE.decimals,
+    },
+    underlyingToken: {
+        address: TOKENS[chainId].AAVE.address,
+        decimals: TOKENS[chainId].AAVE.decimals,
     },
 };

@@ -2,7 +2,7 @@ import {
     RemoveLiquidityInput,
     RemoveLiquidityRecoveryInput,
 } from '@/entities/removeLiquidity/types';
-import { InitPoolInput, InitPoolInputV3 } from '../initPool/types';
+import { InitPoolInput } from '../initPool/types';
 import { CreatePoolInput } from '../createPool/types';
 import { PoolState, PoolStateWithUnderlyings } from '../types';
 import {
@@ -23,9 +23,7 @@ export class InputValidatorBase {
             initPoolInput.amountsIn.map((a) => a.address),
             poolState.tokens.map((t) => t.address),
         );
-        if (poolState.protocolVersion === 3) {
-            this.validateWethIsEth(initPoolInput as InitPoolInputV3);
-        }
+        this.validateWethIsEth(initPoolInput);
     }
 
     validateCreatePool(_input: CreatePoolInput) {}
@@ -51,7 +49,7 @@ export class InputValidatorBase {
         validateTokensRemoveLiquidityRecovery(input, poolState);
     }
 
-    validateWethIsEth(initPoolInput: InitPoolInputV3) {
+    validateWethIsEth(initPoolInput: InitPoolInput) {
         if (initPoolInput.wethIsEth) {
             const inputContainsWrappedNativeAsset =
                 initPoolInput.amountsIn.some((a) =>

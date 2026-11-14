@@ -1,7 +1,7 @@
 schema: https://api.frontier.fi/graphql
-documents: src/data/providers/balancer-api/modules/**/*.ts
+documents: src/data/providers/frontier-api/modules/**/*.ts
 generates:
-  src/data/providers/balancer-api/generated/types.ts:
+  src/data/providers/frontier-api/generated/types.ts:
     plugins:
       - typescript-operations
     config:

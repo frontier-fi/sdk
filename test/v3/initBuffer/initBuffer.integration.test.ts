@@ -23,7 +23,6 @@ import {
     Permit2Helper,
     PERMIT2,
     PublicWalletClient,
-    balancerV3Contracts,
 } from '../../../src';
 import {
     TOKENS,
@@ -36,9 +35,9 @@ import { ANVIL_NETWORKS, startFork } from '../../anvil/anvil-global-setup';
 import { InitBufferBuildCallInput } from '@/entities/initBuffer/types';
 import { AddressProvider } from '@/entities/inputValidator/utils/addressProvider';
 
-const chainId = ChainId.MAINNET;
-const USDC = TOKENS[chainId].USDC;
-const gearboxUSDC = TOKENS[chainId].gearboxUSDC;
+const chainId = ChainId.SEPOLIA;
+const DAI = TOKENS[chainId].DAI_AAVE;
+const stataDAI = TOKENS[chainId].stataDAI;
 
 describe('Buffer Init', () => {
     let client: PublicWalletClient & TestActions;
@@ -65,16 +64,16 @@ describe('Buffer Init', () => {
         await setTokenBalance(
             client,
             testAddress,
-            USDC.address,
-            USDC.slot as number,
-            parseUnits('100000', USDC.decimals),
+            stataDAI.address,
+            stataDAI.slot as number,
+            parseUnits('10000', stataDAI.decimals),
         );
 
         // Approve Permit2 to spend user tokens
         await approveSpenderOnToken(
             client,
             testAddress,
-            USDC.address,
+            stataDAI.address,
             PERMIT2[chainId],
         );
 
@@ -94,7 +93,7 @@ describe('Buffer Init', () => {
             await approveSpenderOnPermit2(
                 client,
                 testAddress,
-                USDC.address,
+                stataDAI.address,
                 AddressProvider.BufferRouter(chainId),
             );
         });
@@ -104,14 +103,14 @@ describe('Buffer Init', () => {
                 chainId,
                 rpcUrl,
                 underlyingAmountIn: {
-                    rawAmount: parseUnits('100', USDC.decimals),
-                    decimals: USDC.decimals,
-                    address: USDC.address,
+                    rawAmount: parseUnits('0', DAI.decimals),
+                    decimals: DAI.decimals,
+                    address: DAI.address,
                 },
                 wrappedAmountIn: {
-                    rawAmount: parseUnits('0', gearboxUSDC.decimals),
-                    decimals: gearboxUSDC.decimals,
-                    address: gearboxUSDC.address,
+                    rawAmount: parseUnits('100', stataDAI.decimals),
+                    decimals: stataDAI.decimals,
+                    address: stataDAI.address,
                 },
             };
             const initBufferQueryOutput =
@@ -166,14 +165,14 @@ describe('Buffer Init', () => {
                 chainId,
                 rpcUrl,
                 underlyingAmountIn: {
-                    rawAmount: parseUnits('100', USDC.decimals),
-                    decimals: USDC.decimals,
-                    address: USDC.address,
+                    rawAmount: parseUnits('0', DAI.decimals),
+                    decimals: DAI.decimals,
+                    address: DAI.address,
                 },
                 wrappedAmountIn: {
-                    rawAmount: parseUnits('0', gearboxUSDC.decimals),
-                    decimals: gearboxUSDC.decimals,
-                    address: gearboxUSDC.address,
+                    rawAmount: parseUnits('100', stataDAI.decimals),
+                    decimals: stataDAI.decimals,
+                    address: stataDAI.address,
                 },
             };
 

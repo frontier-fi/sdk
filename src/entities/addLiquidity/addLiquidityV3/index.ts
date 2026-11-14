@@ -1,5 +1,5 @@
 import { encodeFunctionData, zeroAddress } from 'viem';
-import { balancerRouterAbiExtended } from '@/abi';
+import { frontierRouterAbiExtended } from '@/abi';
 import { Permit2 } from '@/entities/permit2Helper';
 import { Token } from '@/entities/token';
 import { TokenAmount } from '@/entities/tokenAmount';
@@ -12,7 +12,7 @@ import {
 } from '@/entities/utils';
 import { Hex } from '@/types';
 import { missingParameterError } from '@/utils';
-import { getAmountsCall, unsupportedAddLiquidityInputKind } from '../helpers';
+import { getAmountsCall } from '../helpers';
 import {
     AddLiquidityBase,
     AddLiquidityBaseQueryOutput,
@@ -140,7 +140,7 @@ export class AddLiquidityV3 implements AddLiquidityBase {
             case AddLiquidityKind.Proportional:
                 {
                     callData = encodeFunctionData({
-                        abi: balancerRouterAbiExtended,
+                        abi: frontierRouterAbiExtended,
                         functionName: 'addLiquidityProportional',
                         args: [
                             input.poolId,
@@ -155,7 +155,7 @@ export class AddLiquidityV3 implements AddLiquidityBase {
             case AddLiquidityKind.Unbalanced:
                 {
                     callData = encodeFunctionData({
-                        abi: balancerRouterAbiExtended,
+                        abi: frontierRouterAbiExtended,
                         functionName: 'addLiquidityUnbalanced',
                         args: [
                             input.poolId,
@@ -178,7 +178,7 @@ export class AddLiquidityV3 implements AddLiquidityBase {
                         );
                     }
                     callData = encodeFunctionData({
-                        abi: balancerRouterAbiExtended,
+                        abi: frontierRouterAbiExtended,
                         functionName: 'addLiquiditySingleTokenExactOut',
                         args: [
                             input.poolId,
@@ -191,8 +191,6 @@ export class AddLiquidityV3 implements AddLiquidityBase {
                     });
                 }
                 break;
-            case AddLiquidityKind.UnbalancedViaSwap:
-                return unsupportedAddLiquidityInputKind(input.addLiquidityKind);
         }
 
         return {
@@ -224,7 +222,7 @@ export class AddLiquidityV3 implements AddLiquidityBase {
         ] as const;
 
         const callData = encodeFunctionData({
-            abi: balancerRouterAbiExtended,
+            abi: frontierRouterAbiExtended,
             functionName: 'permitBatchAndCall',
             args,
         });

@@ -1,49 +1,43 @@
 /**
  * Example showing how to calculate price impact when adding liquidity with unbalanced inputs.
  *
- * Note: this example is highlighting one use case. You'll find other price impact
- * calculations within each example, such as add/remove liquidity nested, etc..
- *
  * Run with:
  * pnpm example ./examples/priceImpact/addLiquidity.ts
  */
 import { config } from 'dotenv';
 config();
 
-import { Address, parseEther } from 'viem';
+import { Address, parseEther, parseUnits } from 'viem';
 import {
     AddLiquidityInput,
     AddLiquidityKind,
-    BalancerApi,
+    FrontierApi,
     ChainId,
     PriceImpact,
     API_ENDPOINT,
 } from 'src';
+import { ANVIL_NETWORKS, startFork } from 'test/anvil/anvil-global-setup';
 
 const addLiquidityPriceImpact = async () => {
-    // User defined
-    const rpcUrl = process.env.ETHEREUM_RPC_URL as string;
-    const chainId = ChainId.MAINNET;
-    const poolId =
-        '0x5c6ee304399dbdb9c8ef030ab642b10820db8f56000200000000000000000014'; // 80BAL-20WETH
+    const { rpcUrl } = await startFork(ANVIL_NETWORKS.SEPOLIA);
+    const chainId = ChainId.SEPOLIA;
+    const poolId = '0xca9f6d682162cca9e0bf3c96de649e372099d89d';
     const amountsIn = [
         {
-            rawAmount: parseEther('1'),
-            decimals: 18,
-            address: '0xba100000625a3754423978a60c9317c58a424e3D' as Address,
+            rawAmount: parseUnits('10', 6),
+            decimals: 6,
+            address: '0x94a9d9ac8a22534e3faca9f4e7f2e2cf85d5e4c8' as Address,
         },
         {
-            rawAmount: parseEther('1'),
+            rawAmount: parseEther('0.001'),
             decimals: 18,
-            address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' as Address,
+            address: '0xfff9976782d46cc05630d1f6ebab18b2324d6b14' as Address,
         },
     ];
 
-    // API is used to fetch relevant pool data
-    const balancerApi = new BalancerApi(API_ENDPOINT, chainId);
-    const poolState = await balancerApi.pools.fetchPoolState(poolId);
+    const frontierApi = new FrontierApi(API_ENDPOINT, chainId);
+    const poolState = await frontierApi.pools.fetchPoolState(poolId);
 
-    // Construct the AddLiquidityInput, in this case an AddLiquidityUnbalanced
     const addLiquidityInput: AddLiquidityInput = {
         amountsIn,
         chainId,
@@ -51,7 +45,6 @@ const addLiquidityPriceImpact = async () => {
         kind: AddLiquidityKind.Unbalanced,
     };
 
-    // Calculate Price Impact
     const priceImpact = await PriceImpact.addLiquidityUnbalanced(
         addLiquidityInput,
         poolState,

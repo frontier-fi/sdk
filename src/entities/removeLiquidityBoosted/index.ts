@@ -1,14 +1,13 @@
 import { Address, encodeFunctionData, zeroAddress } from 'viem';
 
 import {
-    RemoveLiquidityBase,
     RemoveLiquidityKind,
     RemoveLiquidityBuildCallOutput,
 } from '../removeLiquidity/types';
 
 import { Permit } from '@/entities/permitHelper';
 
-import { balancerCompositeLiquidityRouterBoostedAbiExtended } from '@/abi';
+import { frontierCompositeLiquidityRouterBoostedAbiExtended } from '@/abi';
 
 import { PoolStateWithUnderlyings } from '@/entities/types';
 
@@ -27,7 +26,7 @@ import { InputValidator } from '../inputValidator/inputValidator';
 import { buildPoolStateTokenMap } from '@/entities/utils';
 import { AddressProvider } from '@/entities/inputValidator/utils/addressProvider';
 
-export class RemoveLiquidityBoostedV3 implements RemoveLiquidityBase {
+export class RemoveLiquidityBoostedV3 {
     private readonly inputValidator: InputValidator = new InputValidator();
 
     public async query(
@@ -98,7 +97,7 @@ export class RemoveLiquidityBoostedV3 implements RemoveLiquidityBase {
         const amounts = getAmountsCall(input);
 
         const callData = encodeFunctionData({
-            abi: balancerCompositeLiquidityRouterBoostedAbiExtended,
+            abi: frontierCompositeLiquidityRouterBoostedAbiExtended,
             functionName: 'removeLiquidityProportionalFromERC4626Pool',
             args: [
                 input.poolId,
@@ -139,7 +138,7 @@ export class RemoveLiquidityBoostedV3 implements RemoveLiquidityBase {
         ] as const;
 
         const callData = encodeFunctionData({
-            abi: balancerCompositeLiquidityRouterBoostedAbiExtended,
+            abi: frontierCompositeLiquidityRouterBoostedAbiExtended,
             functionName: 'permitBatchAndCall',
             args,
         });

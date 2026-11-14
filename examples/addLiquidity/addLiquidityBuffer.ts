@@ -18,7 +18,7 @@ import {
     walletActions,
 } from 'viem';
 import {
-    BalancerApi,
+    FrontierApi,
     ChainId,
     Slippage,
     TEST_API_ENDPOINT,
@@ -41,9 +41,9 @@ async function runAgainstFork() {
     const { rpcUrl } = await startFork(ANVIL_NETWORKS.SEPOLIA);
     const chainId = ChainId.SEPOLIA;
     const wrappedTokenAddress =
-        '0x8a88124522dbbf1e56352ba3de1d9f78c143751e' as Address;
+        '0x131a121bda71ed810bcaf2ac9079214925e59c18' as Address;
     const underlyingTokenAddress =
-        '0x94a9D9AC8a22534E3FaCa9F4e7F2E2cf85d5E4C8' as Address;
+        '0x29f2d40b0605204364af54ec677bd022da425d03' as Address;
     const slippage = Slippage.fromPercentage('1'); // 1%
 
     const client = createTestClient({
@@ -57,11 +57,11 @@ async function runAgainstFork() {
     const userAccount = (await client.getAddresses())[0];
 
     // setup fork token balances
-    const usdcAmount = 1000000000n;
-    await mintUSDC(client, underlyingTokenAddress, userAccount, usdcAmount);
+    const wbtcAmount = 100000000n;
+    await mintWBTC(client, underlyingTokenAddress, userAccount, wbtcAmount);
 
-    const depositAmount = usdcAmount / 2n;
-    await depositToStataUSDC(
+    const depositAmount = wbtcAmount / 2n;
+    await depositToStataWBTC(
         client,
         userAccount,
         underlyingTokenAddress,
@@ -137,9 +137,9 @@ export const addLiquidityExample = async ({
     slippage: Slippage;
 }) => {
     // API is used to fetch relevant pool data
-    const balancerApi = new BalancerApi(TEST_API_ENDPOINT, chainId);
+    const frontierApi = new FrontierApi(TEST_API_ENDPOINT, chainId);
     const bufferState =
-        await balancerApi.buffers.fetchBufferState(wrappedTokenAddress);
+        await frontierApi.buffers.fetchBufferState(wrappedTokenAddress);
 
     // Construct the AddLiquidityBufferInput
     const addLiquidityBufferInput: AddLiquidityBufferInput = {
@@ -183,19 +183,19 @@ export default runAgainstFork;
 
 // helper functions
 
-const mintUSDC = async (
+const mintWBTC = async (
     client: PublicWalletClient & TestActions,
     underlyingTokenAddress: Address,
     userAccount: Address,
     amount: bigint,
 ) => {
-    const usdcOwner = '0xC959483DBa39aa9E78757139af0e9a2EDEb3f42D';
+    const wbtcOwner = '0xC959483DBa39aa9E78757139af0e9a2EDEb3f42D';
     await client.setBalance({
-        address: usdcOwner,
+        address: wbtcOwner,
         value: parseEther('1000'),
     });
     await client.impersonateAccount({
-        address: usdcOwner,
+        address: wbtcOwner,
     });
 
     const { request } = await client.simulateContract({
@@ -203,7 +203,7 @@ const mintUSDC = async (
             'function mint(address account, uint256 value) nonpayable returns (bool)',
         ]),
         address: underlyingTokenAddress,
-        account: usdcOwner,
+        account: wbtcOwner,
         functionName: 'mint',
         args: [userAccount, amount],
     });
@@ -211,11 +211,11 @@ const mintUSDC = async (
     await client.writeContract(request);
 
     await client.stopImpersonatingAccount({
-        address: usdcOwner,
+        address: wbtcOwner,
     });
 };
 
-const depositToStataUSDC = async (
+const depositToStataWBTC = async (
     client: PublicWalletClient & TestActions,
     userAccount: Address,
     underlyingTokenAddress: Address,

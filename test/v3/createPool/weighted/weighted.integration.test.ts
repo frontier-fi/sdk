@@ -122,7 +122,11 @@ describe('create weighted pool test', () => {
             client,
             testAddress,
             poolState.tokens.map((t) => t.address),
-            [WETH.slot!, BAL.slot!],
+            poolState.tokens.map((t) =>
+                t.address.toLowerCase() === WETH.address.toLowerCase()
+                    ? WETH.slot!
+                    : BAL.slot!,
+            ),
             poolState.tokens.map((t) => parseUnits('100', t.decimals)),
         );
 

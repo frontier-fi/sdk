@@ -10,6 +10,7 @@ import {
     createTestClient,
     http,
     parseEther,
+    parseUnits,
     publicActions,
     walletActions,
 } from 'viem';
@@ -18,7 +19,7 @@ import {
     AddLiquidityInput,
     AddLiquidityKind,
     AddLiquidityV3BuildCallInput,
-    BalancerApi,
+    FrontierApi,
     ChainId,
     PriceImpact,
     Slippage,
@@ -34,21 +35,21 @@ async function runAgainstFork() {
     // User defined inputs
     const { rpcUrl } = await startFork(ANVIL_NETWORKS.SEPOLIA);
     const chainId = ChainId.SEPOLIA;
-    // 50BAL-50WETH
+    // 50USDC-50WETH
     const pool = {
-        id: '0x2ff3b96e0057a1f25f1d62ab800554ccdb268ab8',
-        address: '0x2ff3b96e0057a1f25f1d62ab800554ccdb268ab8' as Address,
+        id: '0xca9f6d682162cca9e0bf3c96de649e372099d89d',
+        address: '0xca9f6d682162cca9e0bf3c96de649e372099d89d' as Address,
     };
     const amountsIn = [
         {
-            rawAmount: parseEther('0.0001'),
-            decimals: 18,
-            address: '0x7b79995e5f793a07bc00c21412e50ecae098e7f9' as Address,
+            rawAmount: parseUnits('1', 6),
+            decimals: 6,
+            address: '0x94a9d9ac8a22534e3faca9f4e7f2e2cf85d5e4c8' as Address,
         },
         {
             rawAmount: parseEther('0.0001'),
             decimals: 18,
-            address: '0xb19382073c7a0addbb56ac6af1808fa49e377b75' as Address,
+            address: '0xfff9976782d46cc05630d1f6ebab18b2324d6b14' as Address,
         },
     ];
     const slippage = Slippage.fromPercentage('1'); // 1%
@@ -107,8 +108,8 @@ const addLiquidityWithPermit2Signature = async ({
     slippage,
 }) => {
     // API is used to fetch relevant pool data
-    const balancerApi = new BalancerApi(TEST_API_ENDPOINT, chainId);
-    const poolState = await balancerApi.pools.fetchPoolState(poolId);
+    const frontierApi = new FrontierApi(TEST_API_ENDPOINT, chainId);
+    const poolState = await frontierApi.pools.fetchPoolState(poolId);
 
     // Construct the AddLiquidityInput, in this case an AddLiquidityUnbalanced
     const addLiquidityInput: AddLiquidityInput = {

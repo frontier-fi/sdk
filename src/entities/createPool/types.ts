@@ -5,7 +5,6 @@ import {
     DerivedEclpParams,
 } from './createPoolV3/gyroECLP/createPoolGyroECLP';
 
-///// Shared types for v2 and v3 /////
 export interface CreatePoolBase {
     buildCall(input: CreatePoolInput): CreatePoolBuildCallOutput;
 }
@@ -15,52 +14,19 @@ export type CreatePoolBaseInput = {
     symbol: string;
     salt?: Hex;
     chainId: number;
-    protocolVersion: 2 | 3;
+    protocolVersion: 3;
 };
 
 export type CreatePoolInput =
-    | CreatePoolV2WeightedInput
     | CreatePoolV3WeightedInput
     | CreatePoolV3StableInput
-    | CreatePoolStableSurgeInput
-    | CreatePoolGyroECLPInput
-    | CreatePoolReClammInput
-    | CreatePoolLiquidityBootstrappingInput
-    | CreatePoolLiquidityBootstrappingFixedPriceInput;
+    | CreatePoolGyroECLPInput;
 
 export type CreatePoolBuildCallOutput = {
     callData: Hex;
     to: Address;
 };
 
-///// Balancer v2 /////
-export type CreatePoolV2BaseInput = CreatePoolBaseInput & {
-    swapFee: string;
-    poolOwnerAddress: Address;
-    protocolVersion: 2;
-};
-
-export type CreatePoolV2WeightedInput = CreatePoolV2BaseInput & {
-    poolType: PoolType.Weighted;
-    tokens: {
-        address: Address;
-        rateProvider: Address;
-        weight: bigint;
-    }[];
-};
-
-export type CreatePoolV2WeightedArgs = [
-    string,
-    string,
-    Address[],
-    bigint[],
-    Address[],
-    bigint,
-    Address,
-    Hex,
-];
-
-///// Balancer v3 /////
 export type CreatePoolV3BaseInput<T = TokenConfig> = CreatePoolBaseInput & {
     protocolVersion: 3;
     pauseManager: Address;
@@ -101,92 +67,8 @@ export type CreatePoolV3StableInput = CreatePoolV3BaseInput & {
     amplificationParameter: bigint;
 };
 
-export type CreatePoolStableSurgeInput = Omit<
-    CreatePoolV3StableInput,
-    'poolHooksContract' | 'poolType' | 'disableUnbalancedLiquidity'
-> & {
-    poolType: PoolType.StableSurge;
-    poolCreator: Address;
-};
-
 export type CreatePoolGyroECLPInput = CreatePoolV3BaseInput & {
     poolType: PoolType.GyroE;
     eclpParams: EclpParams;
     derivedEclpParams?: DerivedEclpParams;
-};
-
-export type CreatePoolReClammInput = Omit<
-    CreatePoolV3BaseInput,
-    'poolHooksContract' | 'disableUnbalancedLiquidity' | 'enableDonation'
-> & {
-    poolType: PoolType.ReClamm;
-    priceParams: {
-        initialMinPrice: bigint;
-        initialMaxPrice: bigint;
-        initialTargetPrice: bigint;
-        tokenAPriceIncludesRate: boolean;
-        tokenBPriceIncludesRate: boolean;
-    };
-    priceShiftDailyRate: bigint;
-    centerednessMargin: bigint;
-};
-
-export type LBPParams = {
-    owner: Address;
-    projectToken: Address;
-    reserveToken: Address;
-    startTimestamp: bigint;
-    endTimestamp: bigint;
-    blockProjectTokenSwapsIn: boolean;
-    projectTokenStartWeight: bigint;
-    reserveTokenStartWeight: bigint;
-    projectTokenEndWeight: bigint;
-    reserveTokenEndWeight: bigint;
-    reserveTokenVirtualBalance?: bigint; // Optional, defaults to 0n
-};
-
-// The pool uses default liquidity management values (no setters available)
-// swapFeeManager replaced by LBPParams.owner
-// pauseManager is governance by default
-// the pool is the hook itself. No hooksetter available
-export type CreatePoolLiquidityBootstrappingInput = Omit<
-    CreatePoolV3BaseInput,
-    | 'pauseManager'
-    | 'swapFeeManager'
-    | 'poolHooksContract'
-    | 'enableDonation'
-    | 'disableUnbalancedLiquidity'
-    | 'tokens'
-> & {
-    lbpParams: LBPParams;
-    poolType: PoolType.LiquidityBootstrapping;
-    poolCreator?: Address;
-};
-
-export type FixedPriceLBPParams = {
-    owner: Address;
-    projectToken: Address;
-    reserveToken: Address;
-    startTimestamp: bigint;
-    endTimestamp: bigint;
-    projectTokenRate: bigint; // Fixed exchange rate (reserve tokens per project token, scaled to 18 decimals)
-};
-
-// Fixed Price LBP uses default liquidity management values (no setters available)
-// swapFeeManager replaced by FixedPriceLBPParams.owner
-// pauseManager is governance by default
-// the pool is the hook itself. No hooksetter available
-// Must be blockProjectTokenSwapsIn = true (buy-only)
-export type CreatePoolLiquidityBootstrappingFixedPriceInput = Omit<
-    CreatePoolV3BaseInput,
-    | 'pauseManager'
-    | 'swapFeeManager'
-    | 'poolHooksContract'
-    | 'enableDonation'
-    | 'disableUnbalancedLiquidity'
-    | 'tokens'
-> & {
-    fixedPriceLbpParams: FixedPriceLBPParams;
-    poolType: PoolType.LiquidityBootstrappingFixedPrice;
-    poolCreator?: Address;
 };

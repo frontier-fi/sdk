@@ -11,7 +11,7 @@ import {
     PERMIT2,
     NATIVE_ASSETS,
     API_CHAIN_NAMES,
-    balancerV3Contracts,
+    frontierContracts,
 } from '@/utils';
 
 // ─── ABI fragments ──────────────────────────────────────────────────────────
@@ -86,65 +86,35 @@ type CallMeta = {
         | 'getVaultAdmin';
 };
 
-// ─── Validation config ──────────────────────────────────────────────────────
-// 14 contracts have version(). 4 do not: Vault, VaultAdmin, VaultExtension, MevCaptureHook.
+// ─── Validation config (Frontier V3 deployment inputs) ──────────────────────
+// Source: frontier-fi/deployments/tasks/<deployment>/input.ts
 
 const CONTRACT_CHECKS: Record<string, ContractValidation> = {
     BatchRouter: {
         expectedVersion:
-            '{"name":"BatchRouter","version":1,"deployment":"20241205-v3-batch-router"}',
+            '{"name":"BatchRouter","version":1,"deployment":"20261019-batch-router"}',
     },
     BufferRouter: {
         expectedVersion:
-            '{"name":"BufferRouter","version":1,"deployment":"20241205-v3-buffer-router"}',
+            '{"name":"BufferRouter","version":1,"deployment":"20261020-buffer-router"}',
     },
     CompositeLiquidityRouter: {
         expectedVersion:
-            '{"name":"CompositeLiquidityRouter","version":2,"deployment":"20250123-v3-composite-liquidity-router-v2"}',
-    },
-    FixedPriceLBPoolFactory: {
-        expectedVersion:
-            '{"name":"FixedPriceLBPoolFactory","version":1,"deployment":"20251205-v3-fixed-price-lbp"}',
-        hasGetVault: true,
+            '{"name":"CompositeLiquidityRouter","version":2,"deployment":"20261020-composite-liquidity-router"}',
     },
     GyroECLPPoolFactory: {
         expectedVersion:
-            '{"name":"GyroECLPPoolFactory","version":2,"deployment":"20260126-v3-gyro-eclp-v2"}',
-        hasGetVault: true,
-    },
-    LBPoolFactory: {
-        expectedVersion:
-            '{"name":"LBPoolFactory","version":4,"deployment":"20260501-v3-liquidity-bootstrapping-pool-v4"}',
-        hasGetVault: true,
-    },
-    MevCaptureHook: {},
-    ReClammPoolFactory: {
-        expectedVersion:
-            '{"name":"ReClammPoolFactory","version":3,"deployment":"20260428-v3-reclamm-pool-v3"}',
+            '{"name":"GyroECLPPoolFactory","version":2,"deployment":"20261021-gyro-eclp"}',
         hasGetVault: true,
     },
     Router: {
         expectedVersion:
-            '{"name":"Router","version":2,"deployment":"20250307-v3-router-v2"}',
+            '{"name":"Router","version":2,"deployment":"20261019-router"}',
         hasGetPermit2: true,
     },
     StablePoolFactory: {
         expectedVersion:
-            '{"name":"StablePoolFactory","version":3,"deployment":"20260116-v3-stable-pool-v3"}',
-        hasGetVault: true,
-    },
-    StableSurgeHook: {
-        expectedVersion:
-            '{"name":"StableSurgeHook","version":2,"deployment":"20250403-v3-stable-surge-hook-v2"}',
-    },
-    StableSurgePoolFactory: {
-        expectedVersion:
-            '{"name":"StableSurgePoolFactory","version":3,"deployment":"20260117-v3-stable-surge-pool-factory-v3"}',
-        hasGetVault: true,
-    },
-    UnbalancedAddViaSwapRouter: {
-        expectedVersion:
-            '{"name":"UnbalancedAddViaSwapRouter","version":1,"deployment":"20251010-v3-unbalanced-add-via-swap-router"}',
+            '{"name":"StablePoolFactory","version":1,"deployment":"20261021-stable-pool"}',
         hasGetVault: true,
     },
     Vault: { hasGetVaultExtension: true },
@@ -152,112 +122,21 @@ const CONTRACT_CHECKS: Record<string, ContractValidation> = {
     VaultExtension: { hasGetVaultAdmin: true },
     WeightedPoolFactory: {
         expectedVersion:
-            '{"name":"WeightedPoolFactory","version":2,"deployment":"20260115-v3-weighted-pool-v2"}',
+            '{"name":"WeightedPoolFactory","version":2,"deployment":"20261021-weighted-pool"}',
         hasGetVault: true,
     },
 };
 
-// Frontier deployment inputs, not the upstream Balancer deployment versions.
-// Source: frontier-fi/deployments/tasks/<deployment>/input.ts.
-const FRONTIER_SEPOLIA_VERSIONS: Record<string, string> = {
-    BatchRouter:
-        '{"name":"BatchRouter","version":1,"deployment":"20261019-batch-router"}',
-    BufferRouter:
-        '{"name":"BufferRouter","version":1,"deployment":"20261020-buffer-router"}',
-    CompositeLiquidityRouter:
-        '{"name":"CompositeLiquidityRouter","version":2,"deployment":"20261020-composite-liquidity-router"}',
-    GyroECLPPoolFactory:
-        '{"name":"GyroECLPPoolFactory","version":2,"deployment":"20261021-gyro-eclp"}',
-    Router: '{"name":"Router","version":2,"deployment":"20261019-router"}',
-    StablePoolFactory:
-        '{"name":"StablePoolFactory","version":1,"deployment":"20261021-stable-pool"}',
-    WeightedPoolFactory:
-        '{"name":"WeightedPoolFactory","version":2,"deployment":"20261021-weighted-pool"}',
-};
-
 // ─── Chains to test ─────────────────────────────────────────────────────────
 
-const CHAINS_TO_TEST: ChainId[] = [
-    ChainId.MAINNET,
-    ChainId.ARBITRUM_ONE,
-    ChainId.AVALANCHE,
-    ChainId.BASE,
-    ChainId.GNOSIS_CHAIN,
-    ChainId.OPTIMISM,
-    ChainId.SONIC,
-    ChainId.SEPOLIA,
-    ChainId.HYPEREVM,
-    ChainId.PLASMA,
-    ChainId.MONAD,
-    // ChainId.X_LAYER -- Not officially supported yet
-];
-
-// ─── Expected-missing per chain (derived from balancerV3Contracts gaps) ─────
-
-const EXPECTED_MISSING: Partial<Record<ChainId, string[]>> = {
-    [ChainId.SEPOLIA]: [
-        'FixedPriceLBPoolFactory',
-        'LBPoolFactory',
-        'MevCaptureHook',
-        'ReClammPoolFactory',
-        'StableSurgeHook',
-        'StableSurgePoolFactory',
-        'UnbalancedAddViaSwapRouter',
-    ],
-    [ChainId.AVALANCHE]: ['FixedPriceLBPoolFactory'],
-    [ChainId.OPTIMISM]: ['FixedPriceLBPoolFactory'],
-    [ChainId.MONAD]: ['MevCaptureHook'],
-    [ChainId.PLASMA]: ['MevCaptureHook'],
-    [ChainId.SONIC]: ['MevCaptureHook'],
-    [ChainId.X_LAYER]: ['MevCaptureHook'],
-};
+const CHAINS_TO_TEST: ChainId[] = [ChainId.SEPOLIA];
 
 // ─── RPC resolution (env var with fallback, no Anvil) ───────────────────────
 
 const CHAIN_RPC: Record<number, { rpcEnv: string; fallBackRpc: string }> = {
-    [ChainId.MAINNET]: {
-        rpcEnv: 'ETHEREUM_RPC_URL',
-        fallBackRpc: 'https://mainnet.gateway.tenderly.co',
-    },
-    [ChainId.ARBITRUM_ONE]: {
-        rpcEnv: 'ARBITRUM_ONE_RPC_URL',
-        fallBackRpc: 'https://arbitrum.gateway.tenderly.co/',
-    },
-    [ChainId.AVALANCHE]: {
-        rpcEnv: 'AVALANCHE_RPC_URL',
-        fallBackRpc: 'https://avalanche.gateway.tenderly.co/',
-    },
-    [ChainId.BASE]: {
-        rpcEnv: 'BASE_RPC_URL',
-        fallBackRpc: 'https://mainnet.base.org',
-    },
-    [ChainId.GNOSIS_CHAIN]: {
-        rpcEnv: 'GNOSIS_CHAIN_RPC_URL',
-        fallBackRpc: 'https://rpc.gnosischain.com',
-    },
-    [ChainId.OPTIMISM]: {
-        rpcEnv: 'OPTIMISM_RPC_URL',
-        fallBackRpc: 'https://optimism.gateway.tenderly.co/',
-    },
-    [ChainId.SONIC]: {
-        rpcEnv: 'SONIC_RPC_URL',
-        fallBackRpc: 'https://sonic.drpc.org',
-    },
     [ChainId.SEPOLIA]: {
         rpcEnv: 'SEPOLIA_RPC_URL',
         fallBackRpc: 'https://sepolia.gateway.tenderly.co',
-    },
-    [ChainId.HYPEREVM]: {
-        rpcEnv: 'HYPEREVM_RPC_URL',
-        fallBackRpc: 'https://rpc.hyperliquid.xyz/evm',
-    },
-    [ChainId.PLASMA]: {
-        rpcEnv: 'PLASMA_RPC_URL',
-        fallBackRpc: 'https://rpc.plasma.to/',
-    },
-    [ChainId.MONAD]: {
-        rpcEnv: 'MONAD_RPC_URL',
-        fallBackRpc: 'https://rpc.monad.xyz',
     },
 };
 
@@ -276,7 +155,7 @@ function getContractAddress(
     chainId: ChainId,
 ): Address | undefined {
     const addressMap = (
-        balancerV3Contracts as Record<string, Partial<Record<number, string>>>
+        frontierContracts as Record<string, Partial<Record<number, string>>>
     )[contractName];
     return addressMap?.[chainId] as Address | undefined;
 }
@@ -298,19 +177,8 @@ describe('Network Configuration Validation', () => {
 
             for (const contractName of Object.keys(CONTRACT_CHECKS)) {
                 const address = getContractAddress(contractName, chainId);
-                const isExpectedMissing =
-                    EXPECTED_MISSING[chainId]?.includes(contractName) ?? false;
-
-                if (!address && !isExpectedMissing) {
+                if (!address) {
                     missingContracts.push(contractName);
-                } else if (!address && isExpectedMissing) {
-                    console.warn(
-                        `[Chain ${chainId}] ${contractName}: expected missing`,
-                    );
-                } else if (address && isExpectedMissing) {
-                    console.warn(
-                        `[Chain ${chainId}] ${contractName}: stale exclusion — address present but marked expected-missing`,
-                    );
                 }
             }
 
@@ -442,15 +310,8 @@ describe('Network Configuration Validation', () => {
                 switch (meta.callType) {
                     case 'version': {
                         const expected =
-                            (chainId === ChainId.SEPOLIA
-                                ? FRONTIER_SEPOLIA_VERSIONS[meta.contractName]
-                                : undefined) ??
                             CONTRACT_CHECKS[meta.contractName].expectedVersion!;
-                        if (expected === 'PLACEHOLDER') {
-                            console.log(
-                                `[Chain ${chainId}] ${meta.contractName}.version() = "${value}"`,
-                            );
-                        } else if (value !== expected) {
+                        if (value !== expected) {
                             errors.push(
                                 `${meta.contractName}.version(): expected "${expected}", got "${value}"`,
                             );

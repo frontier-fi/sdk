@@ -1,14 +1,23 @@
 /**
- * Example showing how to remove liquidity from a pool.
+ * Example showing how to remove liquidity from a V3 pool.
  * (Runs against a local Anvil fork)
  *
  * Run with:
  * pnpm example ./examples/removeLiquidity/removeLiquidity.ts
  */
-import { Address, parseEther } from 'viem';
 import {
-    BalancerApi,
+    Address,
+    createTestClient,
+    http,
+    parseEther,
+    parseUnits,
+    publicActions,
+    walletActions,
+} from 'viem';
+import {
+    FrontierApi,
     API_ENDPOINT,
+    CHAINS,
     ChainId,
     InputAmount,
     PoolState,
@@ -18,75 +27,121 @@ import {
     RemoveLiquidityKind,
     Slippage,
 } from '../../src';
+import { AddressProvider } from '@/entities/inputValidator/utils/addressProvider';
+import { addLiquidityExample } from 'examples/addLiquidity/addLiquidityUnbalanced';
+import { getSlot } from 'examples/lib/getSlot';
+import { approveSpenderOnToken } from 'test/lib/utils';
 import { ANVIL_NETWORKS, startFork } from '../../test/anvil/anvil-global-setup';
 import { makeForkTx } from '../lib/makeForkTx';
 
 async function runAgainstFork() {
-    // User defined inputs
-    const { rpcUrl } = await startFork(ANVIL_NETWORKS.MAINNET);
-    const chainId = ChainId.MAINNET;
-    const userAccount = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045';
-    // 80BAL-20WETH
+    const { rpcUrl } = await startFork(ANVIL_NETWORKS.SEPOLIA);
+    const chainId = ChainId.SEPOLIA;
+    const client = createTestClient({
+        mode: 'anvil',
+        chain: CHAINS[chainId],
+        transport: http(rpcUrl),
+    })
+        .extend(publicActions)
+        .extend(walletActions);
+    const userAccount = (await client.getAddresses())[0];
     const pool = {
-        id: '0x5c6ee304399dbdb9c8ef030ab642b10820db8f56000200000000000000000014',
-        address: '0x5c6Ee304399DBdB9C8Ef030aB642B10820DB8F56' as Address,
+        id: '0xca9f6d682162cca9e0bf3c96de649e372099d89d',
+        address: '0xca9f6d682162cca9e0bf3c96de649e372099d89d' as Address,
     };
+    const slippage = Slippage.fromPercentage('1'); // 1%
+
+    // Add liquidity first so userAccount holds V3 BPT in the Vault
+    const amountsIn = [
+        {
+            rawAmount: parseUnits('1', 6),
+            decimals: 6,
+            address: '0x94a9d9ac8a22534e3faca9f4e7f2e2cf85d5e4c8' as Address,
+        },
+        {
+            rawAmount: parseEther('0.001'),
+            decimals: 18,
+            address: '0xfff9976782d46cc05630d1f6ebab18b2324d6b14' as Address,
+        },
+    ];
+    const addLiquidityCall = await addLiquidityExample({
+        rpcUrl,
+        chainId,
+        amountsIn,
+        poolId: pool.id,
+        slippage,
+    });
+    await makeForkTx(
+        addLiquidityCall,
+        {
+            rpcUrl,
+            chainId,
+            impersonateAccount: userAccount,
+            forkTokens: amountsIn.map((a) => ({
+                address: a.address,
+                slot: getSlot(chainId, a.address),
+                rawBalance: a.rawAmount,
+            })),
+            client,
+        },
+        [...amountsIn.map((a) => a.address), pool.address],
+        addLiquidityCall.protocolVersion,
+    );
+
+    // Approve Router to burn BPT for removeLiquidity
+    await approveSpenderOnToken(
+        client,
+        userAccount,
+        pool.address,
+        AddressProvider.Router(chainId),
+    );
+
     const bptIn: InputAmount = {
-        rawAmount: parseEther('1'),
+        rawAmount: parseEther('0.001'),
         decimals: 18,
         address: pool.address,
     };
-    const tokenOut = '0xba100000625a3754423978a60c9317c58a424e3D'; // BAL
-    const slippage = Slippage.fromPercentage('1'); // 1%
+    const tokenOut = '0x94a9d9ac8a22534e3faca9f4e7f2e2cf85d5e4c8' as Address;
 
     const call = await removeLiquidity({
         rpcUrl,
         chainId,
-        userAccount,
         bptIn,
         tokenOut,
         poolId: pool.id,
         slippage,
     });
 
-    // Make the tx against the local fork and print the result
     await makeForkTx(
         call,
         {
             rpcUrl,
             chainId,
             impersonateAccount: userAccount,
-            forkTokens: [
-                {
-                    address: pool.address,
-                    slot: 0,
-                    rawBalance: parseEther('1'),
-                },
-            ],
+            forkTokens: [],
+            client,
         },
         [
-            '0xba100000625a3754423978a60c9317c58a424e3D' as Address,
-            '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' as Address,
+            '0x94a9d9ac8a22534e3faca9f4e7f2e2cf85d5e4c8' as Address,
+            '0xfff9976782d46cc05630d1f6ebab18b2324d6b14' as Address,
             pool.address,
         ],
         call.protocolVersion,
+        false,
     );
 }
 
 const removeLiquidity = async ({
     rpcUrl,
     chainId,
-    userAccount,
     poolId,
     bptIn,
     tokenOut,
     slippage,
 }) => {
-    // API is used to fetch relevant pool data
-    const balancerApi = new BalancerApi(API_ENDPOINT, chainId);
-    const poolState: PoolState = await balancerApi.pools.fetchPoolState(poolId);
+    const frontierApi = new FrontierApi(API_ENDPOINT, chainId);
+    const poolState: PoolState = await frontierApi.pools.fetchPoolState(poolId);
 
-    // Construct the RemoveLiquidityInput, in this case a RemoveLiquiditySingleTokenExactIn
     const removeLiquidityInput: RemoveLiquidityInput = {
         chainId,
         rpcUrl,
@@ -95,14 +150,12 @@ const removeLiquidity = async ({
         kind: RemoveLiquidityKind.SingleTokenExactIn,
     };
 
-    // Calculate price impact to ensure it's acceptable
     const priceImpact = await PriceImpact.removeLiquidity(
         removeLiquidityInput,
         poolState,
     );
     console.log(`\nPrice Impact: ${priceImpact.percentage.toFixed(2)}%`);
 
-    // Simulate removing liquidity to get the tokens out
     const removeLiquidity = new RemoveLiquidity();
     const queryOutput = await removeLiquidity.query(
         removeLiquidityInput,
@@ -116,13 +169,11 @@ const removeLiquidity = async ({
         amountsOut: queryOutput.amountsOut.map((a) => a.amount),
     });
 
-    // Apply slippage to the tokens out received from the query and construct the call
     const call = removeLiquidity.buildCall({
         ...queryOutput,
         slippage,
-        sender: userAccount,
-        recipient: userAccount,
         chainId,
+        userData: '0x',
     });
 
     console.log('\nWith slippage applied:');

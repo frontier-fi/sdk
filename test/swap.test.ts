@@ -1,5 +1,11 @@
 // pnpm test -- swap.test.ts
-import { ChainId, inputValidationError, Slippage } from '@/index';
+import {
+    AddressProvider,
+    ChainId,
+    inputValidationError,
+    protocolVersionError,
+    Slippage,
+} from '@/index';
 import { SwapKind } from '@/types';
 import {
     Swap,
@@ -12,7 +18,7 @@ import { Path, TokenApi } from '@/entities/swap/paths/types';
 
 import { TOKENS } from 'test/lib/utils/addresses';
 
-const chainId = ChainId.MAINNET;
+const chainId = ChainId.SEPOLIA;
 const wethIsEth = false;
 
 describe('Swap', () => {
@@ -36,18 +42,18 @@ describe('Swap', () => {
     ];
 
     const pathTo6Decimals: Path = {
-        protocolVersion: 2,
+        protocolVersion: 3,
         tokens,
         pools: [
-            '0xc2aa60465bffa1a88f5ba471a59ca0435c3ec5c100020000000000000000062c',
-            '0xcb444e90d8198415266c6a2724b7900fb12fc56e000000000000000000000011',
-            '0x177127622c4a00f3d409b75571e12cb3c8973d3c000000000000000000000011',
+            '0xb790fa0ba5d563b814b0ca1716c414f6b99937b2',
+            '0x3e099b16beeae7cfcf8a0921941394f1a9b00e0e',
+            '0x86fde41ff01b35846eb2f27868fb2938addd44c4',
         ],
         inputAmountRaw: 1000000000000000000n,
         outputAmountRaw: 1000000n,
     };
 
-    const pathFrom6Decimals = {
+    const pathFrom6Decimals: Path = {
         ...pathTo6Decimals,
         tokens: [...tokens].reverse(),
         inputAmountRaw: 1000000n,
@@ -56,31 +62,24 @@ describe('Swap', () => {
 
     describe('path validation', () => {
         const pathWethDai: Path = {
-            protocolVersion: 2,
+            protocolVersion: 3,
             tokens: [tokens[0], tokens[1]],
-            pools: [
-                '0xc2aa60465bffa1a88f5ba471a59ca0435c3ec5c100020000000000000000062c',
-            ],
+            pools: ['0xb790fa0ba5d563b814b0ca1716c414f6b99937b2'],
             inputAmountRaw: 1000000000000000000n,
             outputAmountRaw: 1000000n,
         };
-        test('should throw if paths are not all same Balancer version', () => {
+        test('should throw if paths use unsupported protocol version', () => {
             expect(() => {
-                const pathV3: Path = {
+                const invalidPath = {
                     ...pathWethDai,
-                    protocolVersion: 3,
+                    protocolVersion: 2 as unknown as 3,
                 };
                 new Swap({
                     chainId,
-                    paths: [pathWethDai, pathV3],
+                    paths: [invalidPath],
                     swapKind: SwapKind.GivenIn,
                 });
-            }).toThrowError(
-                inputValidationError(
-                    'Swap',
-                    'All paths must use same Balancer version.',
-                ),
-            );
+            }).toThrowError(protocolVersionError('Swap', 2));
         });
         describe('path inputs show all start/end with same token', () => {
             test('should throw if paths start with different token', () => {
@@ -153,25 +152,6 @@ describe('Swap', () => {
                     inputAmountRaw: 1000000000000000000n,
                     outputAmountRaw: 1000000n,
                 };
-                test('should throw if buffers used for V2', () => {
-                    expect(() => {
-                        new Swap({
-                            chainId,
-                            paths: [
-                                {
-                                    ...pathWithBuffers,
-                                    protocolVersion: 2,
-                                },
-                            ],
-                            swapKind: SwapKind.GivenIn,
-                        });
-                    }).toThrowError(
-                        inputValidationError(
-                            'Swap',
-                            'Swap with buffers not supported in Balancer v2.',
-                        ),
-                    );
-                });
                 test('should throw if buffers not same length as pools', () => {
                     expect(() => {
                         new Swap({
@@ -195,25 +175,26 @@ describe('Swap', () => {
         });
     });
 
-    describe('balancer version', () => {
-        test('should be balancer version 2', () => {
+    describe('protocol version', () => {
+        test('should be protocol version 3', () => {
             const swap = new Swap({
                 chainId,
                 paths: [pathTo6Decimals],
                 swapKind: SwapKind.GivenIn,
             });
-            expect(swap.protocolVersion).to.eq(2);
+            expect(swap.protocolVersion).to.eq(3);
         });
     });
 
     describe('buildCall max/min amounts', () => {
         const slippage = Slippage.fromPercentage('0.1');
         const deadline = 999999999999999999n; // Infinity
+        const to = AddressProvider.BatchRouter(chainId);
 
         describe('GivenIn', () => {
             const swapKind = SwapKind.GivenIn as const;
             const tokenIn = new Token(
-                1,
+                chainId,
                 pathTo6Decimals.tokens[0].address,
                 pathTo6Decimals.tokens[0].decimals,
             );
@@ -225,7 +206,7 @@ describe('Swap', () => {
                     swapKind,
                 });
                 const tokenOut = new Token(
-                    1,
+                    chainId,
                     pathTo6Decimals.tokens[pathTo6Decimals.tokens.length - 1]
                         .address,
                     pathTo6Decimals.tokens[pathTo6Decimals.tokens.length - 1]
@@ -241,11 +222,10 @@ describe('Swap', () => {
                     queryOutput: {
                         swapKind,
                         expectedAmountOut,
-                        to: '0x76fd639005b09140a8616f036B64DaCefe93617B' as `0x${string}`,
+                        to,
                         amountIn: TokenAmount.fromHumanAmount(tokenIn, '1'),
+                        pathAmounts: [expectedAmountOut.amount],
                     },
-                    sender: '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
-                    recipient: '0x76fd639005b09140a8616f036B64DaCefe93617B',
                     wethIsEth,
                 }) as SwapBuildOutputExactIn;
 
@@ -261,7 +241,7 @@ describe('Swap', () => {
                     swapKind,
                 });
                 const tokenOut = new Token(
-                    1,
+                    chainId,
                     pathFrom6Decimals.tokens[
                         pathFrom6Decimals.tokens.length - 1
                     ].address,
@@ -279,11 +259,10 @@ describe('Swap', () => {
                     queryOutput: {
                         swapKind,
                         expectedAmountOut,
-                        to: '0x76fd639005b09140a8616f036B64DaCefe93617B' as `0x${string}`,
+                        to,
                         amountIn: TokenAmount.fromHumanAmount(tokenIn, '1'),
+                        pathAmounts: [expectedAmountOut.amount],
                     },
-                    sender: '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
-                    recipient: '0x76fd639005b09140a8616f036B64DaCefe93617B',
                     wethIsEth,
                 }) as SwapBuildOutputExactIn;
 
@@ -296,7 +275,7 @@ describe('Swap', () => {
         describe('GivenOut', () => {
             const swapKind = SwapKind.GivenOut as const;
             const tokenOut = new Token(
-                1,
+                chainId,
                 pathTo6Decimals.tokens[pathTo6Decimals.tokens.length - 1]
                     .address,
                 pathTo6Decimals.tokens[pathTo6Decimals.tokens.length - 1]
@@ -309,9 +288,8 @@ describe('Swap', () => {
                     paths: [pathTo6Decimals],
                     swapKind,
                 });
-                const slippage = Slippage.fromPercentage('0.1');
                 const tokenIn = new Token(
-                    1,
+                    chainId,
                     pathTo6Decimals.tokens[0].address,
                     pathTo6Decimals.tokens[0].decimals,
                 );
@@ -322,15 +300,14 @@ describe('Swap', () => {
 
                 const callInfo = swap.buildCall({
                     slippage,
-                    deadline: 999999999999999999n, // Infinity
+                    deadline,
                     queryOutput: {
                         swapKind,
                         expectedAmountIn,
-                        to: '0x76fd639005b09140a8616f036B64DaCefe93617B' as `0x${string}`,
+                        to,
                         amountOut: TokenAmount.fromHumanAmount(tokenOut, '1'),
+                        pathAmounts: [expectedAmountIn.amount],
                     },
-                    sender: '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
-                    recipient: '0x76fd639005b09140a8616f036B64DaCefe93617B',
                     wethIsEth,
                 }) as SwapBuildOutputExactOut;
 
@@ -345,9 +322,8 @@ describe('Swap', () => {
                     paths: [pathFrom6Decimals],
                     swapKind: SwapKind.GivenOut,
                 });
-                const slippage = Slippage.fromPercentage('0.1');
                 const tokenIn = new Token(
-                    1,
+                    chainId,
                     pathFrom6Decimals.tokens[0].address,
                     pathFrom6Decimals.tokens[0].decimals,
                 );
@@ -358,21 +334,20 @@ describe('Swap', () => {
 
                 const callInfo = swap.buildCall({
                     slippage,
-                    deadline: 999999999999999999n, // Infinity
+                    deadline,
                     queryOutput: {
                         swapKind,
                         expectedAmountIn,
-                        to: '0x76fd639005b09140a8616f036B64DaCefe93617B' as `0x${string}`,
+                        to,
                         amountOut: TokenAmount.fromHumanAmount(tokenOut, '1'),
+                        pathAmounts: [expectedAmountIn.amount],
                     },
-                    sender: '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
-                    recipient: '0x76fd639005b09140a8616f036B64DaCefe93617B',
                     wethIsEth,
                 }) as SwapBuildOutputExactOut;
 
                 expect(tokenIn.decimals).to.eq(6);
                 expect(callInfo.maxAmountIn).to.deep.eq(
-                    TokenAmount.fromHumanAmount(tokenIn, '1.001'),
+                    TokenAmount.fromHumanAmount(tokenOut, '1.001'),
                 );
             });
         });

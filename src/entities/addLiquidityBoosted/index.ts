@@ -5,11 +5,9 @@
 import { encodeFunctionData, zeroAddress, Address } from 'viem';
 import { TokenAmount } from '@/entities/tokenAmount';
 import { Permit2 } from '@/entities/permit2Helper';
-import {
-    getAmountsCall,
-    unsupportedAddLiquidityInputKind,
-} from '../addLiquidity/helpers';
+import { getAmountsCall } from '../addLiquidity/helpers';
 import { PoolStateWithUnderlyings } from '@/entities/types';
+import { protocolVersionError } from '@/utils';
 import {
     getAmounts,
     getBptAmountFromReferenceAmountBoosted,
@@ -23,10 +21,9 @@ import {
 import { doAddLiquidityUnbalancedQuery } from './doAddLiquidityUnbalancedQuery';
 import { doAddLiquidityProportionalQuery } from './doAddLiquidityPropotionalQuery';
 import { Token } from '../token';
-import { balancerV3Contracts, protocolVersionError } from '@/utils';
 import {
-    balancerCompositeLiquidityRouterBoostedAbiExtended,
-    balancerRouterAbiExtended,
+    frontierCompositeLiquidityRouterBoostedAbiExtended,
+    frontierRouterAbiExtended,
 } from '@/abi';
 import { Hex } from '@/types';
 import {
@@ -207,7 +204,7 @@ export class AddLiquidityBoostedV3 {
         switch (input.addLiquidityKind) {
             case AddLiquidityKind.Unbalanced: {
                 callData = encodeFunctionData({
-                    abi: balancerCompositeLiquidityRouterBoostedAbiExtended,
+                    abi: frontierCompositeLiquidityRouterBoostedAbiExtended,
                     functionName: 'addLiquidityUnbalancedToERC4626Pool',
                     args,
                 });
@@ -215,7 +212,7 @@ export class AddLiquidityBoostedV3 {
             }
             case AddLiquidityKind.Proportional: {
                 callData = encodeFunctionData({
-                    abi: balancerCompositeLiquidityRouterBoostedAbiExtended,
+                    abi: frontierCompositeLiquidityRouterBoostedAbiExtended,
                     functionName: 'addLiquidityProportionalToERC4626Pool',
                     args,
                 });
@@ -227,8 +224,6 @@ export class AddLiquidityBoostedV3 {
                     input.protocolVersion,
                 );
             }
-            case AddLiquidityKind.UnbalancedViaSwap:
-                return unsupportedAddLiquidityInputKind(input.addLiquidityKind);
         }
 
         const value = getValue(input.amountsIn, wethIsEth);
@@ -263,7 +258,7 @@ export class AddLiquidityBoostedV3 {
         ] as const;
 
         const callData = encodeFunctionData({
-            abi: balancerRouterAbiExtended,
+            abi: frontierRouterAbiExtended,
             functionName: 'permitBatchAndCall',
             args,
         });

@@ -10,22 +10,24 @@ import { Path, TokenApi } from '@/entities/swap/paths/types';
 
 import { TOKENS } from 'test/lib/utils/addresses';
 
+const chainId = ChainId.SEPOLIA;
+
 const tokens: TokenApi[] = [
     {
-        address: TOKENS[1].WETH.address,
-        decimals: TOKENS[1].WETH.decimals,
+        address: TOKENS[chainId].WETH.address,
+        decimals: TOKENS[chainId].WETH.decimals,
     },
     {
-        address: TOKENS[1].DAI.address,
-        decimals: TOKENS[1].DAI.decimals,
+        address: TOKENS[chainId].DAI.address,
+        decimals: TOKENS[chainId].DAI.decimals,
     },
     {
-        address: TOKENS[1].USDC.address,
-        decimals: TOKENS[1].USDC.decimals,
+        address: TOKENS[chainId].USDC.address,
+        decimals: TOKENS[chainId].USDC.decimals,
     },
     {
-        address: TOKENS[1].USDT.address,
-        decimals: TOKENS[1].USDT.decimals,
+        address: TOKENS[chainId].USDT.address,
+        decimals: TOKENS[chainId].USDT.decimals,
     },
 ];
 
@@ -56,7 +58,7 @@ describe('SwapV3', () => {
             describe('GivenIn', () => {
                 test('swaps should be created correctly', () => {
                     const swap = new SwapV3({
-                        chainId: ChainId.MAINNET,
+                        chainId: ChainId.SEPOLIA,
                         paths: [path1hop, path3hops],
                         swapKind: SwapKind.GivenIn,
                     });
@@ -102,7 +104,7 @@ describe('SwapV3', () => {
             describe('GivenOut', () => {
                 test('swaps should be created correctly', () => {
                     const swap = new SwapV3({
-                        chainId: ChainId.MAINNET,
+                        chainId: ChainId.SEPOLIA,
                         paths: [path1hop, path3hops],
                         swapKind: SwapKind.GivenOut,
                     });
@@ -173,7 +175,7 @@ describe('SwapV3', () => {
             describe('GivenIn', () => {
                 test('swaps should be created correctly', () => {
                     const swap = new SwapV3({
-                        chainId: ChainId.MAINNET,
+                        chainId: ChainId.SEPOLIA,
                         paths: [path1hop, path3hops],
                         swapKind: SwapKind.GivenIn,
                     });
@@ -219,7 +221,7 @@ describe('SwapV3', () => {
             describe('GivenOut', () => {
                 test('swaps should be created correctly', () => {
                     const swap = new SwapV3({
-                        chainId: ChainId.MAINNET,
+                        chainId: ChainId.SEPOLIA,
                         paths: [path1hop, path3hops],
                         swapKind: SwapKind.GivenOut,
                     });

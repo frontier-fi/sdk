@@ -177,7 +177,7 @@ describe('create GyroECLP pool input validations', () => {
         expect(() => buildCallWithModifiedInput({ tokens })).toThrowError(
             inputValidationError(
                 'Create Pool',
-                'GyroECLP pools support only two tokens on Balancer v3',
+                'GyroECLP pools support only two tokens on Frontier v3',
             ),
         );
     });

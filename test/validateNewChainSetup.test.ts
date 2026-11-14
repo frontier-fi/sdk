@@ -1,96 +1,59 @@
 // pnpm test test/validateNewChainSetup.test.ts
 
-import { API_CHAIN_NAMES, ChainId } from '@/utils';
-import { CHAINS, NATIVE_ASSETS } from '@/utils/constants';
-import { SorSwapPaths } from '@/data/providers/balancer-api/modules/sorSwapPaths';
-import { BalancerApiClient } from '@/data/providers/balancer-api/client';
+import {
+    API_CHAIN_NAMES,
+    API_ENDPOINT,
+    CHAINS,
+    ChainId,
+    NATIVE_ASSETS,
+    PERMIT2,
+} from '@/utils';
+import { SorSwapPaths } from '@/data/providers/frontier-api/modules/sorSwapPaths';
+import { FrontierApiClient } from '@/data/providers/frontier-api/client';
 
-const API_ENDPOINT = 'https://api.frontier.fi/';
+const SDK_CHAINS = Object.values(ChainId).filter(
+    (v): v is ChainId => typeof v === 'number',
+);
 
-type SupportedChain = {
-    name: string;
-    chainId: number | undefined;
-};
-
-describe('Balancer API (sdk) supports all API chains', () => {
-    let supportedChains: SupportedChain[] = [];
+describe('Frontier SDK supports all Frontier API chains and static chain configs', () => {
+    let apiGqlChains: string[] = [];
 
     beforeAll(async () => {
-        const chainNames = await fetchSupportedChains(API_ENDPOINT);
-
-        // Build array of objects: { name, chainId }
-        supportedChains = chainNames.map((name: string) => {
-            // Find the chainId for this name in API_CHAIN_NAMES
-            const chainIdEntry = Object.entries(API_CHAIN_NAMES).find(
-                ([, apiName]) => apiName === name,
-            );
-            return {
-                name,
-                chainId: chainIdEntry ? Number(chainIdEntry[0]) : undefined,
-            };
-        });
+        apiGqlChains = await fetchSupportedChains(API_ENDPOINT);
     });
 
-    test('API supported chains can be used to fetch SOR paths', () => {
-        // Check that every supported chain string has an entry in API_CHAIN_NAMES
-        const missingEntries: string[] = [];
-        for (const { name, chainId } of supportedChains) {
-            if (chainId === undefined) {
-                missingEntries.push(name);
+    test('All Frontier API GqlChain entries map to a configured SDK ChainId', () => {
+        expect(apiGqlChains.length).toBeGreaterThan(0);
+
+        const missingInSdk: string[] = [];
+        for (const apiChainName of apiGqlChains) {
+            const chainIdEntry = Object.entries(API_CHAIN_NAMES).find(
+                ([, apiName]) => apiName === apiChainName,
+            );
+            if (!chainIdEntry) {
+                missingInSdk.push(apiChainName);
             }
         }
 
-        if (missingEntries.length > 0) {
-            console.error(
-                'Missing API_CHAIN_NAMES entries for:',
-                missingEntries,
-            );
-        }
-
-        expect(missingEntries).toHaveLength(0);
+        expect(missingInSdk).toHaveLength(0);
     });
 
-    test('The Balancer Api (sdk) supports the api chains', () => {
+    test('FrontierApi SorSwapPaths maps all SDK chains', () => {
         const sorSwapPaths = new SorSwapPaths(
-            null as unknown as BalancerApiClient,
+            null as unknown as FrontierApiClient,
         );
 
-        for (const { chainId } of supportedChains) {
-            if (chainId !== undefined) {
-                expect(sorSwapPaths.mapGqlChain(chainId)).toBeDefined();
-            }
+        for (const chainId of SDK_CHAINS) {
+            expect(sorSwapPaths.mapGqlChain(chainId)).toBeDefined();
         }
     });
 
-    test('API supported chains have CHAINS entries', () => {
-        const missingChains: string[] = [];
-        for (const { name, chainId } of supportedChains) {
-            if (chainId === undefined) continue;
-            if (!CHAINS[chainId]) {
-                missingChains.push(`${name} (${chainId})`);
-            }
+    test('All SDK chains have CHAINS, NATIVE_ASSETS, and PERMIT2 entries', () => {
+        for (const chainId of SDK_CHAINS) {
+            expect(CHAINS[chainId]).toBeDefined();
+            expect(NATIVE_ASSETS[chainId]).toBeDefined();
+            expect(PERMIT2[chainId]).toBeDefined();
         }
-        if (missingChains.length > 0) {
-            console.error('Missing CHAINS entries for:', missingChains);
-        }
-        expect(missingChains).toHaveLength(0);
-    });
-
-    test('Native asset is defined for all API chains', () => {
-        const missingNativeAssets: string[] = [];
-        for (const { name, chainId } of supportedChains) {
-            if (chainId === undefined) continue;
-            if (!NATIVE_ASSETS[chainId]) {
-                missingNativeAssets.push(`${name} (${chainId})`);
-            }
-        }
-        if (missingNativeAssets.length > 0) {
-            console.error(
-                'Missing NATIVE_ASSETS entries for:',
-                missingNativeAssets,
-            );
-        }
-        expect(missingNativeAssets).toHaveLength(0);
     });
 });
 

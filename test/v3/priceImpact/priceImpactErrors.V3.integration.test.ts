@@ -15,11 +15,11 @@ import {
 
 import { ANVIL_NETWORKS, startFork } from 'test/anvil/anvil-global-setup';
 import { TOKENS } from 'test/lib/utils/addresses';
-import { boostedPool_USDC_USDT } from 'test/mockData/boostedPool';
-import { weightedWethBal, WETH } from 'test/mockData/weightedWethBalPool';
+import { boostedPool_WBTC_AAVE } from 'test/mockData/boostedPool';
+import { weightedWethUsdc, WETH } from 'test/mockData/weightedWethBalPool';
 
 const chainId = ChainId.SEPOLIA;
-const USDC = TOKENS[chainId].USDC_AAVE;
+const WBTC = TOKENS[chainId].WBTC;
 
 describe('PriceImpact Errors V3', () => {
     let rpcUrl: string;
@@ -34,8 +34,8 @@ describe('PriceImpact Errors V3', () => {
             amountsIn: [
                 {
                     rawAmount: 10000000000000000n,
-                    decimals: 6,
-                    address: USDC.address as Address,
+                    decimals: WBTC.decimals,
+                    address: WBTC.address as Address,
                 },
             ],
             kind: AddLiquidityKind.Unbalanced,
@@ -45,7 +45,7 @@ describe('PriceImpact Errors V3', () => {
         await expect(() =>
             PriceImpact.addLiquidityUnbalancedBoosted(
                 addLiquidityInput,
-                boostedPool_USDC_USDT,
+                boostedPool_WBTC_AAVE,
             ),
         ).rejects.toThrowError(
             'operation will fail at SC level with user defined input.',
@@ -59,14 +59,14 @@ describe('PriceImpact Errors V3', () => {
             bptIn: {
                 rawAmount: 1000000000000000000000n,
                 decimals: 18,
-                address: weightedWethBal.address,
+                address: weightedWethUsdc.address,
             },
             tokenOut: WETH.address,
             kind: RemoveLiquidityKind.SingleTokenExactIn,
         };
 
         await expect(() =>
-            PriceImpact.removeLiquidity(removeLiquidityInput, weightedWethBal),
+            PriceImpact.removeLiquidity(removeLiquidityInput, weightedWethUsdc),
         ).rejects.toThrowError(
             'removeLiquidity operation will fail at SC level with user defined input',
         );

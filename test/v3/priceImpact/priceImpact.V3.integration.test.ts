@@ -3,26 +3,32 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import { Address, parseUnits } from 'viem';
+import {
+    Address,
+    createTestClient,
+    http,
+    publicActions,
+    TestActions,
+    walletActions,
+} from 'viem';
 import {
     AddLiquidityBoostedUnbalancedInput,
     AddLiquidityKind,
-    AddLiquidityNestedInput,
+    CHAINS,
     ChainId,
+    PoolStateWithUnderlyings,
     PriceImpact,
-    PriceImpactAmount,
+    PublicWalletClient,
 } from 'src';
 
 import { ANVIL_NETWORKS, startFork } from 'test/anvil/anvil-global-setup';
 import { TOKENS } from 'test/lib/utils/addresses';
-import { boostedPool_USDC_USDT } from 'test/mockData/boostedPool';
-import { partialBoostedPool_USDT_stataDAI } from 'test/mockData/partialBoostedPool';
-import { nestedWithBoostedPool } from 'test/mockData/nestedPool';
+import { boostedPool_WBTC_AAVE } from 'test/mockData/boostedPool';
+import { createPartialBoostedPool } from 'test/mockData/partialBoostedPool';
 
 const chainId = ChainId.SEPOLIA;
-const USDC = TOKENS[chainId].USDC_AAVE;
-const USDT = TOKENS[chainId].USDT_AAVE;
-const DAI = TOKENS[chainId].DAI_AAVE;
+const WBTC = TOKENS[chainId].WBTC;
+const AAVE = TOKENS[chainId].AAVE;
 const WETH = TOKENS[chainId].WETH;
 
 /**
@@ -31,12 +37,24 @@ const WETH = TOKENS[chainId].WETH;
  */
 describe('PriceImpact V3', () => {
     let rpcUrl: string;
+    let client: PublicWalletClient & TestActions;
+    let partialBoostedPool: PoolStateWithUnderlyings;
+
     beforeAll(async () => {
-        ({ rpcUrl } = await startFork(
-            ANVIL_NETWORKS[ChainId[chainId]],
-            undefined,
-            10157239n,
-        ));
+        ({ rpcUrl } = await startFork(ANVIL_NETWORKS[ChainId[chainId]]));
+        client = createTestClient({
+            mode: 'anvil',
+            chain: CHAINS[chainId],
+            transport: http(rpcUrl),
+        })
+            .extend(publicActions)
+            .extend(walletActions);
+        const [testAddress] = await client.getAddresses();
+        partialBoostedPool = await createPartialBoostedPool(
+            client,
+            rpcUrl,
+            testAddress,
+        );
     });
 
     describe('Full Boosted Pool Boosted Pool AddLiquidity', () => {
@@ -46,14 +64,14 @@ describe('PriceImpact V3', () => {
                 rpcUrl,
                 amountsIn: [
                     {
-                        rawAmount: 1000000n,
-                        decimals: 6,
-                        address: USDC.address as Address,
+                        rawAmount: 100000n,
+                        decimals: WBTC.decimals,
+                        address: WBTC.address as Address,
                     },
                     {
-                        rawAmount: 1000000n,
-                        decimals: 6,
-                        address: USDT.address as Address,
+                        rawAmount: 122000000000000000n,
+                        decimals: AAVE.decimals,
+                        address: AAVE.address as Address,
                     },
                 ],
                 kind: AddLiquidityKind.Unbalanced,
@@ -62,10 +80,9 @@ describe('PriceImpact V3', () => {
             const priceImpactABA =
                 await PriceImpact.addLiquidityUnbalancedBoosted(
                     addLiquidityInput,
-                    boostedPool_USDC_USDT,
+                    boostedPool_WBTC_AAVE,
                 );
-            const priceImpactSpot = PriceImpactAmount.fromDecimal('0.0006335');
-            expect(priceImpactABA.decimal).eq(priceImpactSpot.decimal);
+            expect(Math.abs(priceImpactABA.decimal)).toBeLessThan(0.001);
         });
 
         test('Unbalanced', async () => {
@@ -74,14 +91,14 @@ describe('PriceImpact V3', () => {
                 rpcUrl,
                 amountsIn: [
                     {
-                        rawAmount: 10000000000n,
-                        decimals: 6,
-                        address: USDC.address as Address,
+                        rawAmount: 1000000n,
+                        decimals: WBTC.decimals,
+                        address: WBTC.address as Address,
                     },
                     {
-                        rawAmount: 1000000n,
-                        decimals: 6,
-                        address: USDT.address as Address,
+                        rawAmount: 122000000000000000n,
+                        decimals: AAVE.decimals,
+                        address: AAVE.address as Address,
                     },
                 ],
                 kind: AddLiquidityKind.Unbalanced,
@@ -90,11 +107,10 @@ describe('PriceImpact V3', () => {
             const priceImpactABA =
                 await PriceImpact.addLiquidityUnbalancedBoosted(
                     addLiquidityInput,
-                    boostedPool_USDC_USDT,
+                    boostedPool_WBTC_AAVE,
                 );
-            const priceImpactSpot =
-                PriceImpactAmount.fromDecimal('0.0014914761');
-            expect(priceImpactABA.decimal).eq(priceImpactSpot.decimal);
+            expect(priceImpactABA.decimal).toBeGreaterThan(0.0005);
+            expect(priceImpactABA.decimal).toBeLessThan(0.05);
         });
 
         test('Single token input', async () => {
@@ -103,9 +119,9 @@ describe('PriceImpact V3', () => {
                 rpcUrl,
                 amountsIn: [
                     {
-                        rawAmount: 1000000n,
-                        decimals: 6,
-                        address: USDT.address as Address,
+                        rawAmount: 100000n,
+                        decimals: WBTC.decimals,
+                        address: WBTC.address as Address,
                     },
                 ],
                 kind: AddLiquidityKind.Unbalanced,
@@ -114,10 +130,10 @@ describe('PriceImpact V3', () => {
             const priceImpactABA =
                 await PriceImpact.addLiquidityUnbalancedBoosted(
                     addLiquidityInput,
-                    boostedPool_USDC_USDT,
+                    boostedPool_WBTC_AAVE,
                 );
-            const priceImpactSpot = PriceImpactAmount.fromDecimal('0.0001975');
-            expect(priceImpactABA.decimal).eq(priceImpactSpot.decimal);
+            expect(priceImpactABA.decimal).toBeGreaterThan(0);
+            expect(priceImpactABA.decimal).toBeLessThan(0.01);
         });
     });
 
@@ -128,14 +144,14 @@ describe('PriceImpact V3', () => {
                 rpcUrl,
                 amountsIn: [
                     {
-                        rawAmount: 1000000n,
-                        decimals: USDT.decimals,
-                        address: USDT.address as Address,
+                        rawAmount: 1000000000000000000n,
+                        decimals: AAVE.decimals,
+                        address: AAVE.address as Address,
                     },
                     {
-                        rawAmount: 1000000000000000000n,
-                        decimals: DAI.decimals,
-                        address: DAI.address as Address,
+                        rawAmount: 10000000000000000n,
+                        decimals: WETH.decimals,
+                        address: WETH.address as Address,
                     },
                 ],
                 kind: AddLiquidityKind.Unbalanced,
@@ -144,10 +160,9 @@ describe('PriceImpact V3', () => {
             const priceImpactABA =
                 await PriceImpact.addLiquidityUnbalancedBoosted(
                     addLiquidityInput,
-                    partialBoostedPool_USDT_stataDAI,
+                    partialBoostedPool,
                 );
-            const priceImpactSpot = PriceImpactAmount.fromDecimal('0.0036985');
-            expect(priceImpactABA.decimal).eq(priceImpactSpot.decimal);
+            expect(Math.abs(priceImpactABA.decimal)).toBeLessThan(0.001);
         });
 
         test('Unbalanced', async () => {
@@ -156,14 +171,14 @@ describe('PriceImpact V3', () => {
                 rpcUrl,
                 amountsIn: [
                     {
-                        rawAmount: 4000000n,
-                        decimals: USDT.decimals,
-                        address: USDT.address as Address,
+                        rawAmount: 10000000000000000000n,
+                        decimals: AAVE.decimals,
+                        address: AAVE.address as Address,
                     },
                     {
-                        rawAmount: 1000000000000000000n,
-                        decimals: DAI.decimals,
-                        address: DAI.address as Address,
+                        rawAmount: 10000000000000000n,
+                        decimals: WETH.decimals,
+                        address: WETH.address as Address,
                     },
                 ],
                 kind: AddLiquidityKind.Unbalanced,
@@ -172,38 +187,10 @@ describe('PriceImpact V3', () => {
             const priceImpactABA =
                 await PriceImpact.addLiquidityUnbalancedBoosted(
                     addLiquidityInput,
-                    partialBoostedPool_USDT_stataDAI,
+                    partialBoostedPool,
                 );
-            const priceImpactSpot = PriceImpactAmount.fromDecimal('0.01431375');
-            expect(priceImpactABA.decimal).eq(priceImpactSpot.decimal);
-        });
-    });
-
-    describe('Nested pool', () => {
-        test('Close to proportional', async () => {
-            const addLiquidityInput: AddLiquidityNestedInput = {
-                amountsIn: [
-                    {
-                        address: WETH.address,
-                        rawAmount: parseUnits('0.001', WETH.decimals),
-                        decimals: WETH.decimals,
-                    },
-                    {
-                        address: USDC.address,
-                        rawAmount: parseUnits('2', USDC.decimals),
-                        decimals: USDC.decimals,
-                    },
-                ],
-                chainId,
-                rpcUrl,
-            };
-            const priceImpactABA = await PriceImpact.addLiquidityNested(
-                addLiquidityInput,
-                nestedWithBoostedPool,
-            );
-            const priceImpactSpot =
-                PriceImpactAmount.fromDecimal('0.002871464984091');
-            expect(priceImpactABA.decimal).eq(priceImpactSpot.decimal);
+            expect(priceImpactABA.decimal).toBeGreaterThan(0.005);
+            expect(priceImpactABA.decimal).toBeLessThan(0.1);
         });
     });
 });

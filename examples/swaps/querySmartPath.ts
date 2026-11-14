@@ -6,7 +6,7 @@
  */
 
 import {
-    BalancerApi,
+    FrontierApi,
     API_ENDPOINT,
     ChainId,
     SwapKind,
@@ -38,9 +38,9 @@ export const querySmartPath = async ({
     queryOutput: ExactInQueryOutput | ExactOutQueryOutput;
 }> => {
     // API is used to fetch best path from available liquidity
-    const balancerApi = new BalancerApi(API_ENDPOINT, chainId);
+    const frontierApi = new FrontierApi(API_ENDPOINT, chainId);
 
-    const sorPaths = await balancerApi.sorSwapPaths.fetchSorSwapPaths({
+    const sorPaths = await frontierApi.sorSwapPaths.fetchSorSwapPaths({
         chainId,
         tokenIn: tokenIn.address,
         tokenOut: tokenOut.address,

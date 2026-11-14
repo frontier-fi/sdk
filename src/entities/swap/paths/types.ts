@@ -9,5 +9,5 @@ export type Path = {
     tokens: TokenApi[];
     outputAmountRaw: bigint;
     inputAmountRaw: bigint;
-    protocolVersion: 1 | 2 | 3;
+    protocolVersion: 3;
 };

@@ -14,12 +14,6 @@ export const getAmountsQuery = (
     bptIndex = -1,
 ): RemoveLiquidityAmounts => {
     switch (input.kind) {
-        case RemoveLiquidityKind.Unbalanced:
-            return {
-                minAmountsOut: getAmounts(tokens, input.amountsOut),
-                tokenOutIndex: undefined,
-                maxBptAmountIn: MAX_UINT256, // maxAmountIn set to max when querying
-            };
         case RemoveLiquidityKind.SingleTokenExactOut:
             return {
                 minAmountsOut: getAmounts(tokens, [input.amountOut]),
@@ -55,7 +49,6 @@ export const getAmountsCall = (
     input: RemoveLiquidityBuildCallInput,
 ): RemoveLiquidityAmounts => {
     switch (input.removeLiquidityKind) {
-        case RemoveLiquidityKind.Unbalanced:
         case RemoveLiquidityKind.SingleTokenExactOut:
             return {
                 minAmountsOut: input.amountsOut.map((a) => a.amount),

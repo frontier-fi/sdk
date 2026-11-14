@@ -4,10 +4,8 @@ import {
     AddLiquidity,
     AddLiquidityInput,
     Address,
-    ChainId,
     CreatePoolInput,
     InitPoolInput,
-    NestedPoolState,
     PoolState,
     RemoveLiquidityInput,
     RemoveLiquidity,
@@ -57,18 +55,4 @@ export type CreatePoolTxInput = {
     client: PublicWalletClient & TestActions;
     createPoolInput: CreatePoolInput;
     testAddress: Address;
-};
-
-export type AddLiquidityNestedTxInput = {
-    nestedPoolState: NestedPoolState;
-    amountsIn: {
-        address: Address; // DAI
-        rawAmount: bigint;
-        decimals: number;
-    }[];
-    chainId: ChainId;
-    rpcUrl: string;
-    testAddress: Address;
-    client: PublicWalletClient & TestActions;
-    wethIsEth?: boolean;
 };

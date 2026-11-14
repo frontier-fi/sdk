@@ -4,12 +4,12 @@ import {
     InitPoolBuildOutput,
     InitPoolConfig,
     InitPoolInput,
-    InitPoolInputV2,
     InitPoolInputV3,
 } from './types';
-import { InitPoolV2 } from './initPoolV2';
 import { InitPoolV3 } from './initPoolV3';
 import { Permit2 } from '@/entities/permit2Helper';
+import { protocolVersionError } from '@/utils';
+
 export * from './types';
 
 export class InitPool {
@@ -18,23 +18,11 @@ export class InitPool {
     constructor(public config?: InitPoolConfig) {}
 
     buildCall(input: InitPoolInput, poolState: PoolState): InitPoolBuildOutput {
-        this.inputValidator.validateInitPool(input, poolState);
-        switch (poolState.protocolVersion) {
-            case 2:
-                return new InitPoolV2().buildCall(
-                    input as InitPoolInputV2,
-                    poolState,
-                );
-            case 3:
-                return new InitPoolV3().buildCall(
-                    input as InitPoolInputV3,
-                    poolState,
-                );
-            default:
-                throw Error(
-                    `SDK does not support init for vault version: ${poolState.protocolVersion}`,
-                );
+        if (poolState.protocolVersion !== 3) {
+            throw protocolVersionError('Init Pool', poolState.protocolVersion);
         }
+        this.inputValidator.validateInitPool(input, poolState);
+        return new InitPoolV3().buildCall(input, poolState);
     }
 
     buildCallWithPermit2(
@@ -42,9 +30,10 @@ export class InitPool {
         poolState: PoolState,
         permit2: Permit2,
     ): InitPoolBuildOutput {
+        if (poolState.protocolVersion !== 3) {
+            throw protocolVersionError('Init Pool', poolState.protocolVersion);
+        }
         this.inputValidator.validateInitPool(input, poolState);
-
-        const initPool = new InitPoolV3();
-        return initPool.buildCallWithPermit2(input, poolState, permit2);
+        return new InitPoolV3().buildCallWithPermit2(input, poolState, permit2);
     }
 }

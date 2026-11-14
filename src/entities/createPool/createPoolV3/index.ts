@@ -8,11 +8,7 @@ import {
 } from '../types';
 import { CreatePoolWeightedV3 } from './weighted/createPoolWeighted';
 import { CreatePoolStableV3 } from './stable/createPoolStable';
-import { CreatePoolStableSurge } from './stableSurge/createStableSurge';
 import { CreatePoolGyroECLP } from './gyroECLP/createPoolGyroECLP';
-import { CreatePoolReClamm } from './reClamm/createPoolReClamm';
-
-import { CreatePoolLiquidityBootstrapping } from './liquidityBootstrapping/createLiquidityBootstrapping';
 
 export class CreatePoolV3 implements CreatePoolBase {
     private readonly createPoolTypes: Record<string, CreatePoolBase> = {};
@@ -21,13 +17,7 @@ export class CreatePoolV3 implements CreatePoolBase {
         this.createPoolTypes = {
             [PoolType.Weighted]: new CreatePoolWeightedV3(),
             [PoolType.Stable]: new CreatePoolStableV3(),
-            [PoolType.StableSurge]: new CreatePoolStableSurge(),
             [PoolType.GyroE]: new CreatePoolGyroECLP(),
-            [PoolType.ReClamm]: new CreatePoolReClamm(),
-            [PoolType.LiquidityBootstrapping]:
-                new CreatePoolLiquidityBootstrapping(),
-            [PoolType.LiquidityBootstrappingFixedPrice]:
-                new CreatePoolLiquidityBootstrapping(),
         };
     }
 

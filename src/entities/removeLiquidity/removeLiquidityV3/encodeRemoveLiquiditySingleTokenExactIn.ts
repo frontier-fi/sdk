@@ -1,6 +1,6 @@
 import { encodeFunctionData } from 'viem';
 import { RemoveLiquidityV3BuildCallInput } from '../types';
-import { balancerRouterAbiExtended } from '@/abi';
+import { frontierRouterAbiExtended } from '@/abi';
 import { missingParameterError } from '@/utils';
 
 export const encodeRemoveLiquiditySingleTokenExactIn = (
@@ -16,7 +16,7 @@ export const encodeRemoveLiquiditySingleTokenExactIn = (
         );
     }
     return encodeFunctionData({
-        abi: balancerRouterAbiExtended,
+        abi: frontierRouterAbiExtended,
         functionName: 'removeLiquiditySingleTokenExactIn',
         args: [
             input.poolId,

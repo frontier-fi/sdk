@@ -12,23 +12,17 @@ export type InitPoolBuildOutput = {
     value: bigint;
 };
 
-export type InitPoolInput = InitPoolInputV2 | InitPoolInputV3;
-
 type InitBaseInput = {
     amountsIn: InputAmount[];
     chainId: number;
     wethIsEth?: boolean;
 };
 
-export type InitPoolInputV2 = InitBaseInput & {
-    sender: Address;
-    recipient: Address;
-    fromInternalBalance?: boolean;
-};
-
 export type InitPoolInputV3 = InitBaseInput & {
     minBptAmountOut: bigint;
 };
+
+export type InitPoolInput = InitPoolInputV3;
 
 export type InitPoolConfig = {
     initPoolTypes: Record<string, InitPoolBase>;
