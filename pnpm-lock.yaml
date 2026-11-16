@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@frontier-fi/maths':
-        specifier: 0.2.0
-        version: 0.2.0
+        specifier: ^0.2.1
+        version: 0.2.1
       viem:
         specifier: 2.57.11
         version: 2.57.11(typescript@5.9.3)
@@ -637,8 +637,8 @@ packages:
   '@fastify/busboy@3.2.2':
     resolution: {integrity: sha512-yXSS27qPExaXeuLvMRMXOLtpipzfQYNjG3FkunDWKGfMYjKuhFXko9CVzqxm8jcF+lmtS9Fd89QNdh9XDjnbNg==}
 
-  '@frontier-fi/maths@0.2.0':
-    resolution: {integrity: sha512-CgGW6gKenCYBuJ2a53gpijMFOu4cySvr7dL/ozt8oOu2w3ly2sOkA4nlWvsPWR9sy0fsviteRWgdC8JtYuzEGQ==}
+  '@frontier-fi/maths@0.2.1':
+    resolution: {integrity: sha512-BSIOfhCSJE01Hjvz2drQRyBZm/iMTdqgcp6eg+d3pD9FI3QMCajlByu+EAr0liPGqtufmgTpyeqllnXNgdsa5A==}
     engines: {node: '>=18.x'}
 
   '@graphql-codegen/add@7.1.0':
@@ -3353,7 +3353,7 @@ snapshots:
 
   '@fastify/busboy@3.2.2': {}
 
-  '@frontier-fi/maths@0.2.0': {}
+  '@frontier-fi/maths@0.2.1': {}
 
   '@graphql-codegen/add@7.1.0(graphql@16.14.2)':
     dependencies:
