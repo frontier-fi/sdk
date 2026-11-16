@@ -4,7 +4,7 @@ import { validateCreatePoolTokenConfig } from '../utils/validateCreatePoolTokenC
 
 import { inputValidationError } from '@/utils';
 import { CreatePoolGyroECLPInput } from '@/entities/createPool';
-import { GyroECLPMath } from '@balancer-labs/balancer-maths';
+import { GyroECLPMath } from '@frontier-fi/maths';
 
 export class InputValidatorGyro extends InputValidatorBase {
     validateCreatePool(input: CreatePoolGyroECLPInput) {

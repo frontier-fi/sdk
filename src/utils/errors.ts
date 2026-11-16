@@ -33,17 +33,6 @@ export const protocolVersionError = (
         suggestion,
     );
 
-export const poolTypeError = (
-    action: string,
-    poolType: string,
-    suggestion?: string,
-) =>
-    inputValidationError(
-        action,
-        `${action} not supported for pool type ${poolType}.`,
-        suggestion,
-    );
-
 export const poolTypeProtocolVersionError = (
     action: string,
     poolType: string,

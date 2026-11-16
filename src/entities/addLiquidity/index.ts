@@ -4,20 +4,18 @@ import {
     AddLiquidityInput,
     AddLiquidityQueryOutput,
     AddLiquidityBuildCallInput,
-    AddLiquidityConfig,
 } from './types';
 import { PoolState } from '../types';
 import { AddLiquidityV3 } from './addLiquidityV3';
 import { InputValidator } from '../inputValidator/inputValidator';
 import { Permit2 } from '../permit2Helper';
 import {
-    missingParameterError,
     exceedingParameterError,
+    missingParameterError,
     protocolVersionError,
 } from '@/utils';
 
 export class AddLiquidity implements AddLiquidityBase {
-    constructor(public config?: AddLiquidityConfig) {}
     private readonly inputValidator: InputValidator = new InputValidator();
 
     query(
@@ -71,6 +69,13 @@ export class AddLiquidity implements AddLiquidityBase {
                 'Add Liquidity Build Call',
                 'userData',
                 3,
+            );
+        }
+        if ('sender' in input || 'recipient' in input) {
+            throw exceedingParameterError(
+                'Add Liquidity Build Call',
+                'sender or recipient',
+                input.protocolVersion,
             );
         }
 

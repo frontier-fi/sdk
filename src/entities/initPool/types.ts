@@ -24,10 +24,6 @@ export type InitPoolInputV3 = InitBaseInput & {
 
 export type InitPoolInput = InitPoolInputV3;
 
-export type InitPoolConfig = {
-    initPoolTypes: Record<string, InitPoolBase>;
-};
-
 export type InitializeArgs = [
     Address,
     Address[],

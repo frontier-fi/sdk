@@ -37,12 +37,8 @@ export function calculateProportionalAmounts(
     tokenAmounts: InputAmount[];
     bptAmount: InputAmount;
 } {
-    // ensure that bpt is taken into account even with pools that do not contain its BPT as a token
-    const tokensWithoutBpt = pool.tokens.filter(
-        (t) => !pool.address.toLowerCase().includes(t.address.toLowerCase()),
-    );
     const tokensWithBpt = [
-        ...tokensWithoutBpt,
+        ...pool.tokens,
         {
             address: pool.address,
             balance: pool.totalShares,

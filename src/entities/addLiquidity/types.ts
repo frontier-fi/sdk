@@ -41,7 +41,7 @@ export type AddLiquidityInput =
 
 export type AddLiquidityBaseQueryOutput = {
     poolType: string;
-    poolId: Hex;
+    poolId: Address;
     addLiquidityKind: AddLiquidityKind;
     bptOut: TokenAmount;
     amountsIn: TokenAmount[];
@@ -83,8 +83,4 @@ export type AddLiquidityBuildCallOutput = {
     value: bigint;
     minBptOut: TokenAmount;
     maxAmountsIn: TokenAmount[];
-};
-
-export type AddLiquidityConfig = {
-    customAddLiquidityTypes: Record<string, AddLiquidityBase>;
 };

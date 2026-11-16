@@ -1,11 +1,6 @@
 import { InputValidator } from '../inputValidator/inputValidator';
 import { PoolState } from '../types';
-import {
-    InitPoolBuildOutput,
-    InitPoolConfig,
-    InitPoolInput,
-    InitPoolInputV3,
-} from './types';
+import { InitPoolBuildOutput, InitPoolInput, InitPoolInputV3 } from './types';
 import { InitPoolV3 } from './initPoolV3';
 import { Permit2 } from '@/entities/permit2Helper';
 import { protocolVersionError } from '@/utils';
@@ -14,8 +9,6 @@ export * from './types';
 
 export class InitPool {
     inputValidator: InputValidator = new InputValidator();
-
-    constructor(public config?: InitPoolConfig) {}
 
     buildCall(input: InitPoolInput, poolState: PoolState): InitPoolBuildOutput {
         if (poolState.protocolVersion !== 3) {

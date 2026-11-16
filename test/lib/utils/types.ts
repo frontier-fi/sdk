@@ -21,7 +21,6 @@ export type AddLiquidityTxInput = {
     poolState: PoolState;
     testAddress: Address;
     wethIsEth?: boolean;
-    fromInternalBalance?: boolean;
     usePermit2Signatures?: boolean;
 };
 
@@ -39,7 +38,6 @@ export type RemoveLiquidityTxInputBase = {
     slippage: Slippage;
     testAddress: Address;
     wethIsEth?: boolean;
-    toInternalBalance?: boolean;
     usePermitSignatures?: boolean;
 };
 

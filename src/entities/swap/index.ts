@@ -87,6 +87,9 @@ export class Swap {
         InputValidator.validateBuildCallWithPermit2({
             protocolVersion: this.protocolVersion,
         });
+        if ('sender' in input || 'recipient' in input) {
+            throw exceedingParameterError('Swap', 'sender/recipient', 3);
+        }
         return this.swap.buildCallWithPermit2(input, permit2);
     }
 }

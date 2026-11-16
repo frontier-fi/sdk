@@ -2,7 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/@frontier-fi/sdk/latest.svg)](https://www.npmjs.com/package/@frontier-fi/sdk/v/latest)
 
-TypeScript SDK for interacting with the Frontier V3 protocol on supported chains (`Sepolia`).
+TypeScript SDK for interacting with the Frontier V3 protocol on supported chains (`Base` and `Sepolia`).
 
 ## Installation
 
@@ -38,9 +38,10 @@ configured deployments via RPC and chain setup against the Frontier API.
 
 `pnpm test`
 
-Testing runs against a local Anvil fork and uses the following RPC URL in your `.env` file (with a public RPC fallback when unset):
+Testing runs against a local Anvil fork and uses the following RPC URLs in your `.env` file (with public RPC fallbacks when unset):
 ```
 SEPOLIA_RPC_URL
+BASE_RPC_URL
 ```
 ### Anvil Client
 

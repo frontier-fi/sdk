@@ -48,7 +48,6 @@ async function sdkAddLiquidity({
     slippage: Slippage;
     testAddress: Address;
     wethIsEth?: boolean;
-    fromInternalBalance?: boolean;
     client: PublicWalletClient & TestActions;
     usePermit2Signatures?: boolean;
 }): Promise<{
@@ -202,7 +201,6 @@ export function assertAddLiquidityUnbalanced(
     );
 
     assertTokenDeltas(
-        poolState,
         addLiquidityInput,
         addLiquidityQueryOutput,
         addLiquidityBuildCallOutput,
@@ -236,10 +234,6 @@ export function assertAddLiquiditySingleToken(
         18,
     );
 
-    const tokensWithoutBpt = poolState.tokens.filter(
-        (t) => t.address !== poolState.address,
-    );
-
     const expectedQueryOutput: Omit<AddLiquidityQueryOutput, 'amountsIn'> & {
         userData: Hex;
     } = {
@@ -248,7 +242,7 @@ export function assertAddLiquiditySingleToken(
             bptToken,
             addLiquidityInput.bptOut.rawAmount,
         ),
-        tokenInIndex: tokensWithoutBpt.findIndex(
+        tokenInIndex: poolState.tokens.findIndex(
             (t) => t.address === addLiquidityInput.tokenIn,
         ),
         poolId: poolState.id,
@@ -282,7 +276,6 @@ export function assertAddLiquiditySingleToken(
     );
 
     assertTokenDeltas(
-        poolState,
         addLiquidityInput,
         addLiquidityQueryOutput,
         addLiquidityBuildCallOutput,
@@ -345,8 +338,7 @@ export function assertAddLiquidityProportional(
     }
 
     addLiquidityQueryOutput.amountsIn.forEach((a) => {
-        if (a.token.address === poolState.address) expect(a.amount).toEqual(0n);
-        else expect(a.amount > 0n).to.be.true;
+        expect(a.amount > 0n).to.be.true;
     });
 
     assertAddLiquidityBuildCallOutput(
@@ -370,7 +362,6 @@ export function assertAddLiquidityProportional(
     }
 
     assertTokenDeltas(
-        poolState,
         addLiquidityInput,
         addLiquidityQueryOutput,
         addLiquidityBuildCallOutput,
@@ -380,7 +371,6 @@ export function assertAddLiquidityProportional(
 }
 
 function assertTokenDeltas(
-    poolState: PoolState,
     addLiquidityInput: AddLiquidityInput,
     addLiquidityQueryOutput: AddLiquidityQueryOutput,
     addLiquidityBuildCallOutput: AddLiquidityBuildCallOutput,
@@ -389,21 +379,18 @@ function assertTokenDeltas(
 ) {
     expect(txOutput.transactionReceipt.status).to.eq('success');
 
-    const amountsWithoutBpt = [...addLiquidityQueryOutput.amountsIn].filter(
-        (t) => t.token.address !== poolState.address,
-    );
-
     const expectedDeltas = [
-        ...amountsWithoutBpt.map((a) => a.amount),
+        ...addLiquidityQueryOutput.amountsIn.map((a) => a.amount),
         addLiquidityQueryOutput.bptOut.amount,
         0n,
     ];
 
     if (wethIsEth) {
-        const nativeAssetIndex = amountsWithoutBpt.findIndex((a) =>
-            a.token.isSameAddress(
-                NATIVE_ASSETS[addLiquidityInput.chainId].wrapped,
-            ),
+        const nativeAssetIndex = addLiquidityQueryOutput.amountsIn.findIndex(
+            (a) =>
+                a.token.isSameAddress(
+                    NATIVE_ASSETS[addLiquidityInput.chainId].wrapped,
+                ),
         );
         expectedDeltas[nativeAssetIndex] = 0n;
         expectedDeltas[expectedDeltas.length - 1] =

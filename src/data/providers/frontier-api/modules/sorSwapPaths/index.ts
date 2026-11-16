@@ -116,9 +116,7 @@ export class SorSwapPaths {
     async fetchSorSwapPaths(sorInput: SorInput): Promise<Path[]> {
         const baseVariables: sorGetSwapPathsQueryVariables = {
             chain: this.mapGqlChain(sorInput.chainId) as GqlChain,
-            swapAmount: sorInput.swapAmount.toSignificant(
-                sorInput.swapAmount.token.decimals,
-            ), // Must use human scale
+            swapAmount: sorInput.swapAmount.toExact(), // Must use human scale
             swapType:
                 sorInput.swapKind === SwapKind.GivenIn
                     ? 'EXACT_IN'

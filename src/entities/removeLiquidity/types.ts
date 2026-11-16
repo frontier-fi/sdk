@@ -103,7 +103,3 @@ export interface RemoveLiquidityBase {
         permit: Permit,
     ): RemoveLiquidityBuildCallOutput;
 }
-
-export type RemoveLiquidityConfig = {
-    customRemoveLiquidityTypes: Record<string, RemoveLiquidityBase>;
-};

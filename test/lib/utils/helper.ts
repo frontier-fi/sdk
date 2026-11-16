@@ -191,7 +191,7 @@ export const approveSpenderOnToken = async (
     );
 
     if (!approved) {
-        // approve token on the VAULT_V2
+        // approve spender on token
         await client.writeContract({
             account,
             chain: client.chain,

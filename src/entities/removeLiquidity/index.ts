@@ -1,6 +1,5 @@
 import {
     RemoveLiquidityBase,
-    RemoveLiquidityConfig,
     RemoveLiquidityInput,
     RemoveLiquidityKind,
     RemoveLiquidityQueryOutput,
@@ -19,8 +18,6 @@ import {
 
 export class RemoveLiquidity implements RemoveLiquidityBase {
     private readonly inputValidator: InputValidator = new InputValidator();
-
-    constructor(public config?: RemoveLiquidityConfig) {}
 
     public async query(
         input: RemoveLiquidityInput,
@@ -88,6 +85,13 @@ export class RemoveLiquidity implements RemoveLiquidityBase {
                 'Remove Liquidity buildCallWithPermit',
                 'userData',
                 3,
+            );
+        }
+        if ('sender' in input || 'recipient' in input) {
+            throw exceedingParameterError(
+                'Remove Liquidity buildCallWithPermit',
+                'sender or recipient',
+                input.protocolVersion,
             );
         }
 
