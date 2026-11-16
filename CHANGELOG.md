@@ -1,5 +1,113 @@
 # @frontier-fi/sdk
 
+## 0.2.0
+
+### Minor Changes
+
+- 8914cdb: Add Base (`ChainId.BASE`, `8453`) network configuration and Frontier V3 contract deployments.
+- cfb7930: Remove remaining V2 constants, helpers, config types, and ComposableStable preminted-BPT code paths.
+  
+  **Breaking changes**: Legacy V2 constants, array/swap helpers, unused per-pool-type V2 config parameters, and `AddLiquidityAmounts.maxAmountsInWithoutBpt` have been removed:
+  
+  ```ts
+  // Before
+  import {
+      AddLiquidity,
+      MAX_UINT112,
+      PREMINTED_STABLE_BPT,
+      SECONDS_PER_YEAR,
+  } from '@frontier-fi/sdk';
+  const addLiquidity = new AddLiquidity({ customAddLiquidityTypes: {} });
+  
+  // After
+  import { AddLiquidity } from '@frontier-fi/sdk';
+  const addLiquidity = new AddLiquidity();
+  ```
+  
+  Summary of removed V2 exports and narrowed types:
+  
+  - **Removed V2 constants**: `MAX_UINT112`, `PREMINTED_STABLE_BPT`, and `SECONDS_PER_YEAR`.
+  - **Removed V2 helpers & errors**: `checkInputs`, `removeIndex`, `insertIndex`, and `poolTypeError`.
+  - **Removed unused V2 custom encoder configs**: `AddLiquidityConfig` (`customAddLiquidityTypes`), `RemoveLiquidityConfig` (`customRemoveLiquidityTypes`), and `InitPoolConfig` (`initPoolTypes`), along with the unused `config` constructor parameter on `AddLiquidity`, `RemoveLiquidity`, and `InitPool`.
+  - **Removed V2 preminted-BPT & 32-byte pool ID remnants**: Removed `AddLiquidityAmounts.maxAmountsInWithoutBpt` and `bptIndex` filtering in liquidity helpers, and narrowed `PoolState.id` (and balance/underlying variants), `AddLiquidityBaseQueryOutput.poolId`, and `Path.pools` to `Address` / `Address[]`.
+- 4644341: Strip legacy V2, CowAMM, AuraBAL, nested-pool, undeployed V3 modules, non-Frontier chains, and Balancer-prefixed symbols.
+  
+  **Breaking changes**: `@frontier-fi/sdk` now targets Frontier V3 (`protocolVersion: 3`) exclusively on active Frontier deployments (`ChainId.SEPOLIA`) under Frontier-native naming. The `@balancer/sdk` npm alias (`"@balancer/sdk": "npm:@frontier-fi/sdk@..."`) is no longer drop-in compatible — import directly from `@frontier-fi/sdk` and update renamed symbols and configuration keys:
+  
+  ```ts
+  // Before (0.1.0)
+  import {
+      BalancerApi,
+      BalancerApiClient,
+      type BalancerApiClientOptions,
+      balancerV3Contracts,
+      balancerRouterAbiExtended,
+      balancerBatchRouterAbiExtended,
+      balancerBufferRouterAbiExtended,
+      balancerCompositeLiquidityRouterBoostedAbiExtended,
+      weightedPoolFactoryAbiExtended_V3,
+  } from '@balancer/sdk';
+  
+  // process.env.BALANCER_SDK_CLIENT_NAME / BALANCER_SDK_CLIENT_VERSION
+  // window.BALANCER_SDK_CLIENT_NAME / BALANCER_SDK_CLIENT_VERSION
+  const api = new BalancerApi('https://api.frontier.fi/graphql', ChainId.SEPOLIA);
+  
+  // After (0.2.0)
+  import {
+      API_ENDPOINT,
+      FrontierApi,
+      FrontierApiClient,
+      type FrontierApiClientOptions,
+      frontierContracts,
+      frontierRouterAbiExtended,
+      frontierBatchRouterAbiExtended,
+      frontierBufferRouterAbiExtended,
+      frontierCompositeLiquidityRouterBoostedAbiExtended,
+      weightedPoolFactoryAbiExtended,
+  } from '@frontier-fi/sdk';
+  
+  // process.env.FRONTIER_SDK_CLIENT_NAME / FRONTIER_SDK_CLIENT_VERSION
+  // window.FRONTIER_SDK_CLIENT_NAME / FRONTIER_SDK_CLIENT_VERSION
+  const api = new FrontierApi(API_ENDPOINT, ChainId.SEPOLIA);
+  ```
+  
+  Summary of breaking and runtime behavior changes:
+  
+  - **Renamed exports**: `BalancerApi` → `FrontierApi`, `BalancerApiClient` → `FrontierApiClient`, `BalancerApiClientOptions` → `FrontierApiClientOptions`, `balancerV3Contracts` → `frontierContracts`, `balancerRouterAbiExtended` → `frontierRouterAbiExtended`, `balancerBatchRouterAbiExtended` → `frontierBatchRouterAbiExtended`, `balancerBufferRouterAbiExtended` → `frontierBufferRouterAbiExtended`, `balancerCompositeLiquidityRouterBoostedAbiExtended` → `frontierCompositeLiquidityRouterBoostedAbiExtended`, and `weightedPoolFactoryAbiExtended_V3` → `weightedPoolFactoryAbiExtended`.
+  - **Client headers & API endpoint**: Environment and `window` client metadata variables changed from `BALANCER_SDK_CLIENT_NAME` / `BALANCER_SDK_CLIENT_VERSION` to `FRONTIER_SDK_CLIENT_NAME` / `FRONTIER_SDK_CLIENT_VERSION` (unset old variables silently fall back to defaults), the default `x-graphql-client-name` header changed from `'balancer-sdk'` to `'frontier-sdk'`, and `API_ENDPOINT` / `TEST_API_ENDPOINT` changed from `'https://api.frontier.fi'` to `'https://api.frontier.fi/graphql'`.
+  - **Narrowed `ChainId` & chain maps**: Removed 22 non-Frontier `ChainId` members (`MAINNET`, `GOERLI`, `OPTIMISM`, `BSC`, `GNOSIS_CHAIN`, `POLYGON`, `SONIC`, `ZKSYNC_TESTNET`, `FANTOM`, `FRAXTAL`, `ZKSYNC`, `ZKEVM`, `BASE`, `MODE`, `ARBITRUM_ONE`, `AVALANCHE`, `BASE_GOERLI`, `MONAD`, `MONAD_TESTNET`, `HYPEREVM`, `PLASMA`, `X_LAYER`), retaining `ChainId.SEPOLIA` (`11155111`) across `CHAINS`, `NATIVE_ASSETS` (typed `Record<ChainId, NativeToken>`), `PERMIT2`, `API_CHAIN_NAMES`, and `frontierContracts`.
+  - **Narrowed `PoolType`**: Removed 11 unused members (`AaveLinear`, `ComposableStable`, `CowAmm`, `Fx`, `Gyro2`, `Gyro3`, `MetaStable`, `StableSurge`, `ReClamm`, `LiquidityBootstrapping`, `LiquidityBootstrappingFixedPrice`), retaining `GyroE`, `Stable`, and `Weighted`.
+  - **Removed V2, CowAMM, nested-pool, and undeployed V3 exports**:
+    - Protocol versions `1` and `2` across `Swap`, `AddLiquidity`, `RemoveLiquidity`, `CreatePool`, `InitPool`, and `InitPoolDataProvider` (`protocolVersion` is now `3` only).
+    - V2 & CowAMM types, helpers, relayer, encoders, constants, and ABIs: `SingleSwap`, `BatchSwapStep`, `JoinPoolRequest`, `ExitPoolRequest`, `RemoveLiquidityKind.Unbalanced` (`RemoveLiquidityUnbalancedInput`), `auraBalSwap` / `auraBalSwaps`, `Relayer`, `encoders`, `PoolKind`, `InitPoolAmountsComposableStable`, `balancerV2Contracts`, `VAULT_V2`, `BALANCER_RELAYER`, `BALANCER_QUERIES`, `WEIGHTED_POOL_FACTORY_BALANCER_V2`, `COMPOSABLE_STABLE_POOL_FACTORY`, `DEFAULT_FUND_MANAGMENT`, `AUTHORIZER`, `ADMIN_OF_AUTHORIZER`, `mapPoolType`, `utils/pool` helpers (`getPoolAddress`, `poolIsLinearPool`, `poolHasVirtualSupply`, `poolHasActualSupply`, `poolHasPercentFee`), and all V2 / CowAMM / batch-relayer ABI exports.
+    - Nested-pool and unbalanced-via-swap modules: `AddLiquidityNested`, `RemoveLiquidityNested`, `NestedPoolState` (`NestedPoolStateV2`, `NestedPoolStateV3`, `NestedPoolV2`, `NestedPoolV3`), `mapPoolToNestedPoolStateV2`, `mapPoolToNestedPoolStateV3`, `BALANCER_COMPOSITE_LIQUIDITY_ROUTER_NESTED`, `balancerCompositeLiquidityRouterNestedAbi`, `balancerCompositeLiquidityRouterNestedAbiExtended`, `AddLiquidityKind.UnbalancedViaSwap`, `AddLiquidityUnbalancedViaSwap`, `Permit2Helper.signAddLiquidityNestedApproval`, `Permit2Helper.signAddLiquidityUnbalancedViaSwapApproval`, `PermitHelper.signRemoveLiquidityNestedApproval`, `PriceImpact.addLiquidityNested`, `PriceImpact.removeLiquidityNested`, and `PriceImpact.addLiquidityUnbalancedViaSwap`.
+    - Undeployed V3 pool/hook/router factories, ABIs, `CreatePool` inputs, and `AddressProvider` getters (`LBP`, `FixedPriceLBP`, `ReClamm`, `StableSurge`, `MevCaptureHook`, `UnbalancedAddViaSwapRouter`, `Gyro2CLP`, `MockGyroEclp`).
+  - **V3 pool-type & recovery validation**: `InputValidator` now routes uppercase Frontier API pool types (`'WEIGHTED'`, `'STABLE'`, `'ECLP'`) to `InputValidatorWeighted`, `InputValidatorStable`, and `InputValidatorGyro` without fallback warnings; `InputValidatorGyro` removes legacy V2 proportional-only add/remove overrides so V3 `GyroE` / `ECLP` pools support `RemoveLiquidityKind.Recovery` as well as unbalanced adds and single-token exits on pools created with `disableUnbalancedLiquidity: false`; and `RemoveLiquidity.query` / `validateRemoveLiquidity` now validate `bptIn.address` against `poolState.address` for `RemoveLiquidityKind.Recovery`.
+- 4e4153d: Replace `@balancer-labs/balancer-maths` and duplicated local math and token primitives with `@frontier-fi/maths@0.2.1`.
+  
+  **Breaking changes**: `MathSol`, `LogExpMath`, `WAD`, `RAY`, `ONE_36`, `MAX_UINT256`, `abs`, `min`, `max`, `Token`, `TokenAddress`, `InputToken`, `BigintIsh`, `TokenAmount`, `InputAmount`, and `DECIMAL_SCALES` are now re-exported directly from `@frontier-fi/maths@0.2.1` instead of duplicated local SDK implementations:
+  
+  ```ts
+  // Before
+  import { RAY, TWO_WAD } from '@frontier-fi/sdk';
+  // RAY was 10n ** 36n; TWO_WAD was 2n * 10n ** 18n
+  
+  // After
+  import { ONE_36, RAY, WAD } from '@frontier-fi/sdk';
+  // RAY is now 10n ** 27n (standard DeFi ray); use ONE_36 for 10n ** 36n and 2n * WAD for TWO_WAD
+  ```
+  
+  Summary of behavioral and API changes from `@frontier-fi/maths@0.2.1`:
+  
+  - **`RAY` fixed (`1e36` → `1e27`) & `ONE_36` added**: `RAY` is now `10n ** 27n` (`1e27`), and `ONE_36` (`10n ** 36n`) is exported for 36-decimal fixed-point math (`LogExpMath._ln_36` now uses `ONE_36`).
+  - **Removed internal math constants**: `TWO_WAD`, `FOUR_WAD`, and `HUNDRED_WAD` are no longer exported; use `2n * WAD`, `4n * WAD`, and `100n * WAD` instead. `LogExpMath`, `ONE_36`, `FixedPointFunction`, `MathSol.mulDivUpFixed`, `TokenAddress`, and `TokenAmount.toExact()` are newly exported.
+  - **`MathSol` rounding, zero-denominator reverts, and detached helpers**: `MathSol.powDownFixed(x, y)` now rounds down (`mulDownFixed`) instead of up (`mulUpFixed`) for `y === 2e18` and `y === 4e18`; `MathSol.divUp`, `divDownFixed`, `divUpFixed`, and `mulDivUpFixed` throw `RangeError` on zero denominators for all numerators (including `0n / 0n`, matching onchain reverts); and all `MathSol` helpers work when passed detached as `FixedPointFunction` callbacks.
+  - **Stricter `TokenAmount` validation, arithmetic, and formatting**:
+    - `TokenAmount.add` and `TokenAmount.sub` now throw `Error('Token mismatch: ...')` when `chainId`, `address`, or `decimals` differ between operands.
+    - `TokenAmount` validates `token.decimals` is an integer in `0..18` (`RangeError`), rejects unsafe `number` inputs (`RangeError`), and rejects empty strings (`SyntaxError`).
+    - `TokenAmount.toSignificant(significantDigits)` now preserves `significantDigits` significant figures on `< 1` values (e.g. `'0.000000312457'` for `significantDigits = 6` rather than truncating to `'0'`) and throws `RangeError` on negative or non-integer `significantDigits`; `SorSwapPaths` and callers needing full unrounded human-scale amounts use `TokenAmount.toExact()`.
+    - `TokenAmount.mulUpFixed`, `divUpFixed`, and `fromScale18Amount(..., true)` use true ceiling division (`divCeil`, toward +∞; `0n` stays `0n` instead of returning `1n`), while `mulDownFixed`, `divDownFixed`, and `fromScale18Amount(..., false)` use true floor division (`divFloor`, toward −∞; e.g. `-1234567 × 0.5` yields `-617284n` instead of truncating toward zero to `-617283n`).
+
 ## 0.1.0
 
 Initial Frontier package, forked from the SDK 6.2.1 codebase.
