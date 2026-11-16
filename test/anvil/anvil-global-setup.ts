@@ -29,9 +29,9 @@ export const ANVIL_NETWORKS: Record<NetworksWithFork, NetworkSetup> = {
     },
     BASE: {
         rpcEnv: 'BASE_RPC_URL',
-        fallBackRpc: 'https://mainnet.base.org',
+        fallBackRpc: 'https://base.gateway.tenderly.co',
         port: ANVIL_PORTS.BASE,
-        forkBlockNumber: 42000000n,
+        forkBlockNumber: 58250000n,
     },
 };
 

@@ -10,7 +10,11 @@ import { PoolState } from '../types';
 import { InputValidator } from '../inputValidator/inputValidator';
 import { RemoveLiquidityV3 } from './removeLiquidityV3';
 import { Permit } from '../permitHelper';
-import { missingParameterError, protocolVersionError } from '@/utils';
+import {
+    exceedingParameterError,
+    missingParameterError,
+    protocolVersionError,
+} from '@/utils';
 
 export class RemoveLiquidity implements RemoveLiquidityBase {
     private readonly inputValidator: InputValidator = new InputValidator();
@@ -54,6 +58,13 @@ export class RemoveLiquidity implements RemoveLiquidityBase {
                 3,
             );
         }
+        if ('sender' in input || 'recipient' in input) {
+            throw exceedingParameterError(
+                'Remove Liquidity buildCall',
+                'sender or recipient',
+                input.protocolVersion,
+            );
+        }
         const removeLiquidity = new RemoveLiquidityV3();
         return removeLiquidity.buildCall(input);
     }
@@ -74,6 +85,13 @@ export class RemoveLiquidity implements RemoveLiquidityBase {
                 'Remove Liquidity buildCallWithPermit',
                 'userData',
                 3,
+            );
+        }
+        if ('sender' in input || 'recipient' in input) {
+            throw exceedingParameterError(
+                'Remove Liquidity buildCallWithPermit',
+                'sender or recipient',
+                input.protocolVersion,
             );
         }
 

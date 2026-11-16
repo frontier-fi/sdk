@@ -10,6 +10,18 @@ export const missingParameterError = (
         suggestion,
     );
 
+export const exceedingParameterError = (
+    action: string,
+    param: string,
+    protocolVersion: number,
+    suggestion?: string,
+) =>
+    inputValidationError(
+        action,
+        `${action} input exceeding parameter ${param} for Frontier v${protocolVersion}`,
+        suggestion,
+    );
+
 export const protocolVersionError = (
     action: string,
     protocolVersion: number,

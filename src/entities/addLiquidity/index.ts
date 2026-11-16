@@ -9,7 +9,11 @@ import { PoolState } from '../types';
 import { AddLiquidityV3 } from './addLiquidityV3';
 import { InputValidator } from '../inputValidator/inputValidator';
 import { Permit2 } from '../permit2Helper';
-import { missingParameterError, protocolVersionError } from '@/utils';
+import {
+    exceedingParameterError,
+    missingParameterError,
+    protocolVersionError,
+} from '@/utils';
 
 export class AddLiquidity implements AddLiquidityBase {
     private readonly inputValidator: InputValidator = new InputValidator();
@@ -44,6 +48,13 @@ export class AddLiquidity implements AddLiquidityBase {
                 3,
             );
         }
+        if ('sender' in input || 'recipient' in input) {
+            throw exceedingParameterError(
+                'Add Liquidity Build Call',
+                'sender or recipient',
+                input.protocolVersion,
+            );
+        }
         const addLiquidity = new AddLiquidityV3();
         return addLiquidity.buildCall(input);
     }
@@ -58,6 +69,13 @@ export class AddLiquidity implements AddLiquidityBase {
                 'Add Liquidity Build Call',
                 'userData',
                 3,
+            );
+        }
+        if ('sender' in input || 'recipient' in input) {
+            throw exceedingParameterError(
+                'Add Liquidity Build Call',
+                'sender or recipient',
+                input.protocolVersion,
             );
         }
 

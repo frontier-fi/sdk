@@ -1,17 +1,27 @@
 // pnpm test -- inputValidator.test.ts
 import {
+    AddLiquidity,
+    AddLiquidityBuildCallInput,
     AddLiquidityInput,
     AddLiquidityKind,
     PoolState,
     RemoveLiquidity,
     RemoveLiquidityInput,
     RemoveLiquidityKind,
+    RemoveLiquidityV3BuildCallInput,
+    Slippage,
+    Swap,
+    SwapBuildCallInput,
+    Token,
+    TokenAmount,
 } from '@/entities';
 import { InputValidatorGyro } from '@/entities/inputValidator/gyro/inputValidatorGyro';
 import { InputValidator } from '@/entities/inputValidator/inputValidator';
 import { InputValidatorStable } from '@/entities/inputValidator/stable/inputValidatorStable';
 import { AddressProvider } from '@/entities/inputValidator/utils/addressProvider';
 import { InputValidatorWeighted } from '@/entities/inputValidator/weighted/inputValidatorWeighted';
+import { SwapKind } from '@/types';
+import { exceedingParameterError } from '@/utils';
 import { ChainId } from '@/utils/constants';
 import { describe, expect, test, vi } from 'vitest';
 
@@ -179,5 +189,102 @@ describe('inputValidator', () => {
                 );
             }).toThrowError(/not found in array/);
         }
+    });
+
+    test('rejects sender and recipient on V3 Swap, AddLiquidity, and RemoveLiquidity buildCall methods', () => {
+        const tokenA = new Token(
+            ChainId.SEPOLIA,
+            '0x2222222222222222222222222222222222222222',
+            18,
+        );
+        const tokenB = new Token(
+            ChainId.SEPOLIA,
+            '0x3333333333333333333333333333333333333333',
+            6,
+        );
+        const bpt = new Token(
+            ChainId.SEPOLIA,
+            '0x1111111111111111111111111111111111111111',
+            18,
+        );
+        const slippage = Slippage.fromPercentage('0.1');
+        const recipient = '0x9999999999999999999999999999999999999999';
+
+        const swap = new Swap({
+            chainId: ChainId.SEPOLIA,
+            paths: [
+                {
+                    protocolVersion: 3,
+                    tokens: [
+                        { address: tokenA.address, decimals: tokenA.decimals },
+                        { address: tokenB.address, decimals: tokenB.decimals },
+                    ],
+                    pools: [bpt.address],
+                    inputAmountRaw: 1000n,
+                    outputAmountRaw: 1000n,
+                },
+            ],
+            swapKind: SwapKind.GivenIn,
+        });
+        const swapInput = {
+            slippage,
+            queryOutput: {
+                swapKind: SwapKind.GivenIn as const,
+                amountIn: TokenAmount.fromRawAmount(tokenA, 1000n),
+                expectedAmountOut: TokenAmount.fromRawAmount(tokenB, 1000n),
+                to: AddressProvider.Router(ChainId.SEPOLIA),
+            },
+            recipient,
+        } as unknown as SwapBuildCallInput;
+
+        expect(() => swap.buildCall(swapInput)).toThrowError(
+            exceedingParameterError('Swap', 'sender/recipient', 3),
+        );
+
+        const addLiquidity = new AddLiquidity();
+        const addCallInput = {
+            poolType: 'Weighted',
+            poolId: bpt.address,
+            addLiquidityKind: AddLiquidityKind.Unbalanced,
+            bptOut: TokenAmount.fromRawAmount(bpt, 1000n),
+            amountsIn: [TokenAmount.fromRawAmount(tokenA, 1000n)],
+            chainId: ChainId.SEPOLIA,
+            protocolVersion: 3 as const,
+            to: AddressProvider.Router(ChainId.SEPOLIA),
+            slippage,
+            userData: '0x' as const,
+            recipient,
+        } as unknown as AddLiquidityBuildCallInput;
+
+        expect(() => addLiquidity.buildCall(addCallInput)).toThrowError(
+            exceedingParameterError(
+                'Add Liquidity Build Call',
+                'sender or recipient',
+                3,
+            ),
+        );
+
+        const removeLiquidity = new RemoveLiquidity();
+        const removeCallInput = {
+            poolType: 'Weighted',
+            poolId: bpt.address,
+            removeLiquidityKind: RemoveLiquidityKind.Proportional,
+            bptIn: TokenAmount.fromRawAmount(bpt, 1000n),
+            amountsOut: [TokenAmount.fromRawAmount(tokenA, 1000n)],
+            chainId: ChainId.SEPOLIA,
+            protocolVersion: 3 as const,
+            to: AddressProvider.Router(ChainId.SEPOLIA),
+            slippage,
+            userData: '0x' as const,
+            recipient,
+        } as unknown as RemoveLiquidityV3BuildCallInput;
+
+        expect(() => removeLiquidity.buildCall(removeCallInput)).toThrowError(
+            exceedingParameterError(
+                'Remove Liquidity buildCall',
+                'sender or recipient',
+                3,
+            ),
+        );
     });
 });

@@ -14,7 +14,7 @@ import {
 } from './types';
 import { InputValidator } from '../inputValidator/inputValidator';
 import { Address } from 'viem';
-import { protocolVersionError } from '@/utils';
+import { exceedingParameterError, protocolVersionError } from '@/utils';
 
 export * from './types';
 export * from './paths';
@@ -74,6 +74,9 @@ export class Swap {
     buildCall(
         input: SwapBuildCallInput,
     ): SwapBuildOutputExactIn | SwapBuildOutputExactOut {
+        if ('sender' in input || 'recipient' in input) {
+            throw exceedingParameterError('Swap', 'sender/recipient', 3);
+        }
         return this.swap.buildCall(input);
     }
 
@@ -84,6 +87,9 @@ export class Swap {
         InputValidator.validateBuildCallWithPermit2({
             protocolVersion: this.protocolVersion,
         });
+        if ('sender' in input || 'recipient' in input) {
+            throw exceedingParameterError('Swap', 'sender/recipient', 3);
+        }
         return this.swap.buildCallWithPermit2(input, permit2);
     }
 }
