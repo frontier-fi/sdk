@@ -1,5 +1,11 @@
 # @frontier-fi/sdk
 
+## 0.3.0
+
+### Minor Changes
+
+- 7d622ce: Add Ethereum (`ChainId.MAINNET`, `1`) network configuration and Frontier V3 contract deployments.
+
 ## 0.2.0
 
 ### Minor Changes
