@@ -4,11 +4,20 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), '');
+    const rpcDefines = Object.fromEntries(
+        Object.entries(env)
+            .filter(
+                ([key]) => key === 'DRPC_API_KEY' || key.endsWith('_RPC_URL'),
+            )
+            .map(([key, value]) => [
+                `process.env.${key}`,
+                JSON.stringify(value),
+            ]),
+    );
 
     return {
         define: {
-            'process.env.SEPOLIA_RPC_URL': JSON.stringify(env.SEPOLIA_RPC_URL),
-            'process.env.BASE_RPC_URL': JSON.stringify(env.BASE_RPC_URL),
+            ...rpcDefines,
             'process.env.SKIP_GLOBAL_SETUP': JSON.stringify(
                 env.SKIP_GLOBAL_SETUP,
             ),

@@ -38,6 +38,13 @@ describe('inputValidator', () => {
         }).toThrowError(/^Unsupported chainId: 777777777$/);
     });
 
+    test('BatchRouter should return address for MAINNET (chainId 1)', () => {
+        expect(() => {
+            const address = AddressProvider.BatchRouter(ChainId.MAINNET);
+            expect(address).toBeDefined();
+        }).not.toThrow();
+    });
+
     test('BatchRouter should return address for BASE (chainId 8453)', () => {
         expect(() => {
             const address = AddressProvider.BatchRouter(ChainId.BASE);

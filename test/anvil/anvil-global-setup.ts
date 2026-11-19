@@ -4,32 +4,38 @@ dotenv.config();
 import { Anvil, CreateAnvilOptions, createAnvil } from '@viem/anvil';
 import { ChainId } from '../../src/utils/constants';
 import { sleep } from '../lib/utils/promises';
+import { CHAIN_RPC, ChainRpcConfig, resolveRpcUrl } from '../lib/utils/rpc';
 
-export type NetworkSetup = {
-    rpcEnv: string;
-    fallBackRpc: string | undefined;
+export type NetworkSetup = ChainRpcConfig & {
     port: number;
     forkBlockNumber: bigint;
 };
 
-type NetworksWithFork = Extract<keyof typeof ChainId, 'SEPOLIA' | 'BASE'>;
+type NetworksWithFork = Extract<
+    keyof typeof ChainId,
+    'MAINNET' | 'SEPOLIA' | 'BASE'
+>;
 
 const ANVIL_PORTS: Record<NetworksWithFork, number> = {
     // Ports separated by 100 to avoid port collision when running tests in parallel
+    MAINNET: 8645,
     SEPOLIA: 8945,
     BASE: 9045,
 };
 
 export const ANVIL_NETWORKS: Record<NetworksWithFork, NetworkSetup> = {
+    MAINNET: {
+        ...CHAIN_RPC[ChainId.MAINNET],
+        port: ANVIL_PORTS.MAINNET,
+        forkBlockNumber: 26444500n,
+    },
     SEPOLIA: {
-        rpcEnv: 'SEPOLIA_RPC_URL',
-        fallBackRpc: 'https://sepolia.gateway.tenderly.co',
+        ...CHAIN_RPC[ChainId.SEPOLIA],
         port: ANVIL_PORTS.SEPOLIA,
         forkBlockNumber: 12127500n,
     },
     BASE: {
-        rpcEnv: 'BASE_RPC_URL',
-        fallBackRpc: 'https://base.gateway.tenderly.co',
+        ...CHAIN_RPC[ChainId.BASE],
         port: ANVIL_PORTS.BASE,
         forkBlockNumber: 58250000n,
     },
@@ -39,20 +45,10 @@ function getAnvilOptions(
     network: NetworkSetup,
     blockNumber?: bigint,
 ): CreateAnvilOptions {
-    let forkUrl: string;
-    if (
-        process.env[network.rpcEnv] &&
-        process.env[network.rpcEnv] !== 'undefined' // sometimes .env will return 'undefined' as string for undefined variables
-    ) {
-        forkUrl = process.env[network.rpcEnv] as string;
-    } else {
-        if (!network.fallBackRpc)
-            throw Error(
-                `Please add a environment variable for: ${network.rpcEnv}`,
-            );
-        forkUrl = network.fallBackRpc;
+    const { url: forkUrl, source } = resolveRpcUrl(network);
+    if (source === 'fallback') {
         console.warn(
-            `\`${network.rpcEnv}\` not found. Falling back to \`${forkUrl}\`.`,
+            `\`${network.rpcEnv}\` and \`DRPC_API_KEY\` not found. Falling back to \`${forkUrl}\`.`,
         );
     }
     const port = network.port;
