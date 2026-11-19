@@ -29,6 +29,5 @@ jobs:
       - name: Test
         run: pnpm test:all
         env:
-          SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
-          BASE_RPC_URL: ${{ secrets.BASE_RPC_URL }}
+          DRPC_API_KEY: ${{ secrets.DRPC_API_KEY }}
 

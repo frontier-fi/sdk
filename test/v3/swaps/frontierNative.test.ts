@@ -22,6 +22,14 @@ const slippage = Slippage.fromPercentage('1');
 
 const CHAIN_CONFIGS = [
     {
+        name: 'Ethereum',
+        chainId: ChainId.MAINNET,
+        weth: {
+            address: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+            decimals: 18,
+        } as const,
+    },
+    {
         name: 'Base',
         chainId: ChainId.BASE,
         weth: {

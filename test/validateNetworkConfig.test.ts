@@ -13,6 +13,7 @@ import {
     API_CHAIN_NAMES,
     frontierContracts,
 } from '@/utils';
+import { CHAIN_RPC, resolveRpcUrl } from './lib/utils/rpc';
 
 // ─── ABI fragments ──────────────────────────────────────────────────────────
 
@@ -129,27 +130,18 @@ const CONTRACT_CHECKS: Record<string, ContractValidation> = {
 
 // ─── Chains to test ─────────────────────────────────────────────────────────
 
-const CHAINS_TO_TEST: ChainId[] = [ChainId.BASE, ChainId.SEPOLIA];
+const CHAINS_TO_TEST: ChainId[] = [
+    ChainId.MAINNET,
+    ChainId.BASE,
+    ChainId.SEPOLIA,
+];
 
-// ─── RPC resolution (env var with fallback, no Anvil) ───────────────────────
-
-const CHAIN_RPC: Record<number, { rpcEnv: string; fallBackRpc: string }> = {
-    [ChainId.BASE]: {
-        rpcEnv: 'BASE_RPC_URL',
-        fallBackRpc: 'https://mainnet.base.org',
-    },
-    [ChainId.SEPOLIA]: {
-        rpcEnv: 'SEPOLIA_RPC_URL',
-        fallBackRpc: 'https://sepolia.gateway.tenderly.co',
-    },
-};
+// ─── RPC resolution (per-chain env > dRPC > public fallback, no Anvil) ───────
 
 function getRpcUrl(chainId: ChainId): string {
     const rpcConfig = CHAIN_RPC[chainId];
     if (!rpcConfig) throw new Error(`No RPC config for chainId ${chainId}`);
-    const envUrl = process.env[rpcConfig.rpcEnv];
-    if (envUrl && envUrl !== 'undefined') return envUrl;
-    return rpcConfig.fallBackRpc;
+    return resolveRpcUrl(rpcConfig).url;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

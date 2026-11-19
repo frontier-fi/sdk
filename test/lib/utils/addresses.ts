@@ -4,6 +4,18 @@ import { ChainId } from '@/utils';
 export type TestToken = { address: Address; decimals: number; slot?: number };
 
 export const TOKENS = {
+    [ChainId.MAINNET]: {
+        WETH: {
+            address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+            decimals: 18,
+            slot: 3,
+        },
+        USDC: {
+            address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+            decimals: 6,
+            slot: 9,
+        },
+    },
     [ChainId.BASE]: {
         WETH: {
             address: '0x4200000000000000000000000000000000000006',
@@ -118,6 +130,7 @@ export const TOKENS = {
 export type TestPool = TestToken & { id: Hex; type: PoolType };
 
 export const POOLS = {
+    [ChainId.MAINNET]: {},
     [ChainId.BASE]: {},
     [ChainId.SEPOLIA]: {
         // USDC_AAVE / WETH (50/50 Weighted)
