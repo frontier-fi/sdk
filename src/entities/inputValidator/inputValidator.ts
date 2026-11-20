@@ -23,7 +23,7 @@ export class InputValidator {
         const weightedValidator = new InputValidatorWeighted();
         this.validators = {
             [PoolType.GyroE]: gyroValidator,
-            ECLP: gyroValidator,
+            GYROE: gyroValidator,
             [PoolType.Stable]: stableValidator,
             STABLE: stableValidator,
             [PoolType.Weighted]: weightedValidator,

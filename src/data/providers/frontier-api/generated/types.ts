@@ -11,7 +11,7 @@ export type Incremental<T> =
 export type GqlChain = 'SEPOLIA';
 
 /** Supported pool types */
-export type GqlPoolType = 'ECLP' | 'STABLE' | 'WEIGHTED';
+export type GqlPoolType = 'GYROE' | 'STABLE' | 'WEIGHTED';
 
 export type GqlSorSwapType = 'EXACT_IN' | 'EXACT_OUT';
 
