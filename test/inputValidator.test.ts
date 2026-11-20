@@ -65,7 +65,7 @@ describe('inputValidator', () => {
         }).toThrowError(/Address not found for BatchRouter on chainId: 2/);
     });
 
-    test('maps uppercase Frontier API pool types (WEIGHTED, STABLE, ECLP) to concrete validators without warning', () => {
+    test('maps uppercase Frontier API pool types (WEIGHTED, STABLE, GYROE) to concrete validators without warning', () => {
         const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
         const inputValidator = new InputValidator();
 
@@ -75,7 +75,7 @@ describe('inputValidator', () => {
         expect(inputValidator.getValidator('STABLE')).toBeInstanceOf(
             InputValidatorStable,
         );
-        expect(inputValidator.getValidator('ECLP')).toBeInstanceOf(
+        expect(inputValidator.getValidator('GYROE')).toBeInstanceOf(
             InputValidatorGyro,
         );
         expect(warnSpy).not.toHaveBeenCalled();
@@ -83,11 +83,11 @@ describe('inputValidator', () => {
         warnSpy.mockRestore();
     });
 
-    test('supports recovery, unbalanced add, and single-token remove for GyroE and API ECLP pools while validating pool tokens', async () => {
+    test('supports recovery, unbalanced add, and single-token remove for GyroE and API GYROE pools while validating pool tokens', async () => {
         const inputValidator = new InputValidator();
         const removeLiquidity = new RemoveLiquidity();
 
-        for (const poolType of ['ECLP', 'GyroE'] as const) {
+        for (const poolType of ['GYROE', 'GyroE'] as const) {
             const eclpPoolState: PoolState = {
                 id: '0x1111111111111111111111111111111111111111',
                 address: '0x1111111111111111111111111111111111111111',
