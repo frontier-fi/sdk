@@ -1,5 +1,11 @@
 # @frontier-fi/sdk
 
+## 0.3.1
+
+### Patch Changes
+
+- 1ef1020: Route uppercase Frontier API `GYROE` pool type to `InputValidatorGyro` instead of `ECLP`.
+
 ## 0.3.0
 
 ### Minor Changes
