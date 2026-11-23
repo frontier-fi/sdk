@@ -1,5 +1,11 @@
 # @frontier-fi/sdk
 
+## 0.4.0
+
+### Minor Changes
+
+- 44904fe: Add Monad (`ChainId.MONAD`, `143`) network configuration and Frontier V3 contract deployments.
+
 ## 0.3.1
 
 ### Patch Changes
