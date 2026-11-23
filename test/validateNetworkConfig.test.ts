@@ -132,6 +132,7 @@ const CONTRACT_CHECKS: Record<string, ContractValidation> = {
 
 const CHAINS_TO_TEST: ChainId[] = [
     ChainId.MAINNET,
+    ChainId.MONAD,
     ChainId.BASE,
     ChainId.SEPOLIA,
 ];

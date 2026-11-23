@@ -16,6 +16,18 @@ export const TOKENS = {
             slot: 9,
         },
     },
+    [ChainId.MONAD]: {
+        WMON: {
+            address: '0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A',
+            decimals: 18,
+            slot: 3,
+        },
+        USDC: {
+            address: '0x754704Bc059F8C67012fEd69BC8A327a5aafb603',
+            decimals: 6,
+            slot: 9,
+        },
+    },
     [ChainId.BASE]: {
         WETH: {
             address: '0x4200000000000000000000000000000000000006',
@@ -131,6 +143,7 @@ export type TestPool = TestToken & { id: Hex; type: PoolType };
 
 export const POOLS = {
     [ChainId.MAINNET]: {},
+    [ChainId.MONAD]: {},
     [ChainId.BASE]: {},
     [ChainId.SEPOLIA]: {
         // USDC_AAVE / WETH (50/50 Weighted)

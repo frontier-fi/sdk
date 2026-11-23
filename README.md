@@ -2,7 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/@frontier-fi/sdk/latest.svg)](https://www.npmjs.com/package/@frontier-fi/sdk/v/latest)
 
-TypeScript SDK for interacting with the Frontier V3 protocol on supported chains (`Ethereum`, `Base`, and `Sepolia`).
+TypeScript SDK for interacting with the Frontier V3 protocol on supported chains (`Ethereum`, `Base`, `Monad`, and `Sepolia`).
 
 ## Installation
 
@@ -44,6 +44,7 @@ DRPC_API_KEY
 # Optional per-chain overrides:
 ETHEREUM_RPC_URL
 BASE_RPC_URL
+MONAD_RPC_URL
 SEPOLIA_RPC_URL
 ```
 ### Anvil Client

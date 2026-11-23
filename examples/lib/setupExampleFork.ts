@@ -7,8 +7,7 @@ import {
     parseEther,
     parseAbi,
 } from 'viem';
-import { CHAINS, ChainId } from '../../src';
-import { TOKENS } from 'test/lib/utils';
+import { CHAINS, ChainId, NATIVE_ASSETS } from '../../src';
 
 /**
  * Starts a local Anvil fork for Frontier V3 examples and wraps ETH into WETH for account #0
@@ -27,11 +26,10 @@ export const setupExampleFork = async ({ chainId }: { chainId: ChainId }) => {
 
     const userAccount = (await client.getAddresses())[0];
 
-    // Wrap ETH into WETH for default anvil account #0
-    const WETH = TOKENS[chainId].WETH;
+    // Wrap native asset into its wrapped token for default anvil account #0
     const { request } = await client.simulateContract({
         account: userAccount,
-        address: WETH.address,
+        address: NATIVE_ASSETS[chainId].wrapped,
         abi: parseAbi(['function deposit() payable']),
         functionName: 'deposit',
         args: [],

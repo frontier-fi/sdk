@@ -52,6 +52,13 @@ describe('inputValidator', () => {
         }).not.toThrow();
     });
 
+    test('BatchRouter should return address for MONAD (chainId 143)', () => {
+        expect(() => {
+            const address = AddressProvider.BatchRouter(ChainId.MONAD);
+            expect(address).toBeDefined();
+        }).not.toThrow();
+    });
+
     test('BatchRouter should return address for SEPOLIA (chainId 11155111)', () => {
         expect(() => {
             const address = AddressProvider.BatchRouter(ChainId.SEPOLIA);

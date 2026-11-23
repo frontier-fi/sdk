@@ -13,7 +13,7 @@ export type NetworkSetup = ChainRpcConfig & {
 
 type NetworksWithFork = Extract<
     keyof typeof ChainId,
-    'MAINNET' | 'SEPOLIA' | 'BASE'
+    'MAINNET' | 'MONAD' | 'SEPOLIA' | 'BASE'
 >;
 
 const ANVIL_PORTS: Record<NetworksWithFork, number> = {
@@ -21,6 +21,7 @@ const ANVIL_PORTS: Record<NetworksWithFork, number> = {
     MAINNET: 8645,
     SEPOLIA: 8945,
     BASE: 9045,
+    MONAD: 9145,
 };
 
 export const ANVIL_NETWORKS: Record<NetworksWithFork, NetworkSetup> = {
@@ -28,6 +29,11 @@ export const ANVIL_NETWORKS: Record<NetworksWithFork, NetworkSetup> = {
         ...CHAIN_RPC[ChainId.MAINNET],
         port: ANVIL_PORTS.MAINNET,
         forkBlockNumber: 26444500n,
+    },
+    MONAD: {
+        ...CHAIN_RPC[ChainId.MONAD],
+        port: ANVIL_PORTS.MONAD,
+        forkBlockNumber: 124813000n,
     },
     SEPOLIA: {
         ...CHAIN_RPC[ChainId.SEPOLIA],
