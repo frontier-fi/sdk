@@ -38,6 +38,14 @@ const CHAIN_CONFIGS = [
         } as const,
     },
     {
+        name: 'Monad',
+        chainId: ChainId.MONAD,
+        weth: {
+            address: '0x3bd359c1119da7da1d913d1c4d2b7c461115433a',
+            decimals: 18,
+        } as const,
+    },
+    {
         name: 'Sepolia',
         chainId: ChainId.SEPOLIA,
         weth: {

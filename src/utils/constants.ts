@@ -1,5 +1,5 @@
 import { Address, Chain } from 'viem';
-import { base, mainnet, sepolia } from 'viem/chains';
+import { base, mainnet, monad, sepolia } from 'viem/chains';
 import { NativeToken } from '../entities/nativeToken';
 
 export const ZERO_ADDRESS: Address =
@@ -22,6 +22,7 @@ export const STABLE_POOL_CONSTRAINTS = {
 
 export enum ChainId {
     MAINNET = 1,
+    MONAD = 143,
     BASE = 8453,
     SEPOLIA = 11155111,
 }
@@ -29,18 +30,21 @@ export enum ChainId {
 // The Frontier API requires the chain to be passed as an uppercase GqlChain string
 export const API_CHAIN_NAMES: Record<number, string> = {
     [ChainId.MAINNET]: 'MAINNET',
+    [ChainId.MONAD]: 'MONAD',
     [ChainId.BASE]: 'BASE',
     [ChainId.SEPOLIA]: 'SEPOLIA',
 };
 
 export const CHAINS: Record<number, Chain> = {
     [ChainId.MAINNET]: mainnet,
+    [ChainId.MONAD]: monad,
     [ChainId.BASE]: base,
     [ChainId.SEPOLIA]: sepolia,
 };
 
 export const PERMIT2: Record<number, Address> = {
     [ChainId.MAINNET]: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
+    [ChainId.MONAD]: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
     [ChainId.BASE]: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
     [ChainId.SEPOLIA]: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
 };
@@ -53,6 +57,14 @@ export const NATIVE_ASSETS: Record<ChainId, NativeToken> = {
         '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
         'ETH',
         'Ether',
+    ),
+    [ChainId.MONAD]: new NativeToken(
+        ChainId.MONAD,
+        NATIVE_ADDRESS,
+        18,
+        '0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A',
+        'MON',
+        'Monad',
     ),
     [ChainId.BASE]: new NativeToken(
         ChainId.BASE,

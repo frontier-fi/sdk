@@ -12,6 +12,11 @@ export const CHAIN_RPC: Record<ChainId, ChainRpcConfig> = {
         drpcNetwork: 'ethereum',
         fallBackRpc: 'https://mainnet.gateway.tenderly.co',
     },
+    [ChainId.MONAD]: {
+        rpcEnv: 'MONAD_RPC_URL',
+        drpcNetwork: 'monad',
+        fallBackRpc: 'https://monad.gateway.tenderly.co',
+    },
     [ChainId.BASE]: {
         rpcEnv: 'BASE_RPC_URL',
         drpcNetwork: 'base',
